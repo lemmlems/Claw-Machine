@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -11,7 +11,6 @@ model Event {
   id                    String        @id @default(cuid())
   name                  String
   status                String        @default("OPEN")
-  publicBaseUrl         String?
   hostTokenHash         String
   hostPinHash           String?
   removeWinnerAfterPick Boolean       @default(true)

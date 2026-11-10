@@ -27,11 +27,6 @@ type HostPayload = {
     message: string;
   } | null;
   gossip: string[];
-  publicAddress: {
-    url: string;
-    isLocal: boolean;
-    mode: 'wifi' | 'public' | 'local';
-  };
 };
 
 type GuestPayload = {
@@ -142,14 +137,6 @@ function HostScreen({
   const activeNames = hostState?.participants.filter((participant) => participant.status === 'ACTIVE') ?? [];
   const inactiveNames = hostState?.participants.filter((participant) => participant.status === 'INACTIVE') ?? [];
   const wonNames = hostState?.participants.filter((participant) => participant.status === 'WON') ?? [];
-  const [addressDraft, setAddressDraft] = useState(hostState?.publicAddress.url ?? '');
-  const isLocalAddress = hostState?.publicAddress.isLocal ?? true;
-
-  useEffect(() => {
-    if (hostState?.publicAddress.url) {
-      setAddressDraft(hostState.publicAddress.url);
-    }
-  }, [hostState?.publicAddress.url]);
 
   const addGuest = async (event: FormEvent) => {
     event.preventDefault();
@@ -183,35 +170,6 @@ function HostScreen({
     const payload = await response.json();
     if (!response.ok) {
       setFormError(payload.message ?? 'No guest is ready for selection.');
-      return;
-    }
-
-    setFormError(null);
-    await refreshHost();
-  };
-
-  const savePublicAddress = async (event: FormEvent) => {
-    event.preventDefault();
-    const response = await fetch('/api/settings/public-address', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: addressDraft }),
-    });
-    const payload = await response.json();
-
-    if (!response.ok) {
-      setFormError(payload.message ?? 'The public address could not be saved.');
-      return;
-    }
-
-    setFormError(null);
-    await refreshHost();
-  };
-
-  const useWifiAddress = async () => {
-    const response = await fetch('/api/settings/use-wifi-address', { method: 'POST' });
-    if (!response.ok) {
-      setFormError('The Wi-Fi address could not be restored. Please restart the app and try again.');
       return;
     }
 
@@ -267,38 +225,6 @@ function HostScreen({
             Select the Diamond
           </button>
 
-          <section className="address-settings">
-            <h3>Public address</h3>
-            <p className={`address-mode ${hostState?.publicAddress.mode ?? 'local'}`}>
-              {hostState?.publicAddress.mode === 'wifi'
-                ? 'Wi-Fi mode: guests must be on the same Wi-Fi'
-                : hostState?.publicAddress.mode === 'public'
-                  ? 'Public tunnel mode: guests can join from anywhere'
-                  : 'Local address warning: this address only works on this PC'}
-            </p>
-            {isLocalAddress && (
-              <p className="local-warning">
-                QR printing and downloading are disabled until you set a LAN or public address.
-              </p>
-            )}
-            <form onSubmit={savePublicAddress} className="address-form">
-              <label htmlFor="public-address">Invitation address</label>
-              <input
-                id="public-address"
-                type="url"
-                value={addressDraft}
-                onChange={(event) => setAddressDraft(event.target.value)}
-                placeholder="https://xxxx.trycloudflare.com"
-                required
-              />
-              <div className="address-actions">
-                <button type="submit" className="primary-button">Save address</button>
-                <button type="button" className="secondary-button" onClick={useWifiAddress}>
-                  Use my Wi-Fi address
-                </button>
-              </div>
-            </form>
-          </section>
         </aside>
 
         <main className="panel main-panel">
@@ -308,7 +234,7 @@ function HostScreen({
             ))}
           </div>
           <div className="print-actions">
-            <button type="button" className="secondary-button" onClick={() => window.print()} disabled={isLocalAddress}>
+            <button type="button" className="secondary-button" onClick={() => window.print()}>
               Print invitations
             </button>
           </div>
@@ -342,11 +268,6 @@ function HostScreen({
                           <a
                             href={participant.qrCode}
                             download={`${participant.name.replace(/[^a-z0-9-]+/gi, '-').toLowerCase()}-invitation.png`}
-                            aria-disabled={isLocalAddress}
-                            className={isLocalAddress ? 'disabled-link' : undefined}
-                            onClick={(event) => {
-                              if (isLocalAddress) event.preventDefault();
-                            }}
                           >
                             Download QR
                           </a>

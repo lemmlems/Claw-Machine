@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
 import { PrismaClient, type Event, type Participant } from '@prisma/client';
 import { createHash, randomBytes } from 'node:crypto';
-import { networkInterfaces } from 'node:os';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,13 +10,7 @@ import QRCode from 'qrcode';
 const prisma = new PrismaClient();
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
-const publicPort = Number(process.env.PUBLIC_PORT ?? port);
-const networkAddress = Object.values(networkInterfaces())
-  .flatMap((addresses) => addresses ?? [])
-  .filter((address) => address.family === 'IPv4' && !address.internal && !address.address.startsWith('169.254.'))
-  .sort((left, right) => Number(right.address.startsWith('192.168.')) - Number(left.address.startsWith('192.168.')))
-  .at(0)?.address;
-const wifiBaseUrl = `http://${networkAddress ?? 'localhost'}:${publicPort}`;
+const publicBaseUrl = process.env.PUBLIC_BASE_URL?.trim().replace(/\/+$/, '') ?? '';
 const clients = new Set<Response>();
 
 let latestWinner: { participantName: string; message: string } | null = null;
@@ -32,18 +25,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, '../..');
 const distIndex = path.join(workspaceRoot, 'dist', 'frontend', 'index.html');
-
-function getAddressState(storedAddress?: string | null) {
-  const url = storedAddress ?? process.env.PUBLIC_BASE_URL?.trim() ?? wifiBaseUrl;
-  const hostname = new URL(url).hostname.toLowerCase();
-  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
-
-  return {
-    url,
-    isLocal,
-    mode: isLocal ? 'local' : url === wifiBaseUrl ? 'wifi' : 'public',
-  };
-}
 
 async function prepareParticipant(participant: Participant, baseUrl: string): Promise<ParticipantWithQr> {
   const invitationUrl = `${baseUrl}/activate/${participant.activationToken}`;
@@ -84,13 +65,12 @@ async function ensureEvent(): Promise<Event> {
 
 async function getEventPayload() {
   const event = await ensureEvent();
-  const address = getAddressState(event.publicBaseUrl);
   const participants = await prisma.participant.findMany({
     where: { eventId: event.id },
     orderBy: { createdAt: 'asc' },
   });
 
-  const hydrated = await Promise.all(participants.map((participant) => prepareParticipant(participant, address.url)));
+  const hydrated = await Promise.all(participants.map((participant) => prepareParticipant(participant, publicBaseUrl)));
 
   return {
     event: {
@@ -102,7 +82,6 @@ async function getEventPayload() {
     participants: hydrated,
     winner: latestWinner,
     gossip: gossipFeed.slice(0, 6),
-    publicAddress: address,
   };
 }
 
@@ -125,51 +104,6 @@ app.get('/api/health', (_req: Request, res: Response) => {
 app.get('/api/event', async (_req: Request, res: Response) => {
   const payload = await getEventPayload();
   res.json(payload);
-});
-
-app.post('/api/settings/public-address', async (req: Request, res: Response) => {
-  const rawUrl = typeof req.body?.url === 'string' ? req.body.url.trim() : '';
-  let publicBaseUrl: string;
-
-  try {
-    const parsedUrl = new URL(rawUrl);
-    if (
-      !['http:', 'https:'].includes(parsedUrl.protocol) ||
-      parsedUrl.username ||
-      parsedUrl.password ||
-      parsedUrl.pathname !== '/' ||
-      parsedUrl.search ||
-      parsedUrl.hash
-    ) {
-      throw new Error('Invalid public address');
-    }
-
-    publicBaseUrl = parsedUrl.origin;
-  } catch {
-    return res.status(400).json({
-      message: 'Please enter a complete address beginning with http:// or https://.',
-    });
-  }
-
-  const event = await ensureEvent();
-  await prisma.event.update({
-    where: { id: event.id },
-    data: { publicBaseUrl },
-  });
-
-  await broadcastState();
-  return res.json({ ok: true, publicAddress: getAddressState(publicBaseUrl) });
-});
-
-app.post('/api/settings/use-wifi-address', async (_req: Request, res: Response) => {
-  const event = await ensureEvent();
-  await prisma.event.update({
-    where: { id: event.id },
-    data: { publicBaseUrl: wifiBaseUrl },
-  });
-
-  await broadcastState();
-  return res.json({ ok: true, publicAddress: getAddressState(wifiBaseUrl) });
 });
 
 app.get('/api/events/stream', (_req: Request, res: Response) => {
@@ -214,7 +148,7 @@ app.post('/api/participants', async (req: Request, res: Response) => {
     },
   });
 
-  const combined = await prepareParticipant(participant, getAddressState(event.publicBaseUrl).url);
+  const combined = await prepareParticipant(participant, publicBaseUrl);
   gossipFeed.unshift(`Dearest guests, ${cleanName} has been invited to the ball.`);
   if (gossipFeed.length > 6) gossipFeed.pop();
 
@@ -358,24 +292,33 @@ app.get(/^(?!\/api).*/, (_req: Request, res: Response) => {
 });
 
 async function start() {
-  await ensureEvent();
-  const configuredPublicAddress = process.env.PUBLIC_BASE_URL?.trim();
-  if (configuredPublicAddress) {
-    try {
-      const parsed = new URL(configuredPublicAddress);
-      if (!['http:', 'https:'].includes(parsed.protocol)) {
-        throw new Error('PUBLIC_BASE_URL must use HTTP or HTTPS.');
-      }
-    } catch (error) {
-      console.error('PUBLIC_BASE_URL is invalid. Use a complete http:// or https:// address.', error);
-      process.exitCode = 1;
-      return;
-    }
+  if (!publicBaseUrl) {
+    console.error('PUBLIC_BASE_URL is required. Set it to the public address used for guest invitations.');
+    process.exitCode = 1;
+    return;
   }
 
+  try {
+    const parsed = new URL(publicBaseUrl);
+    if (
+      !['http:', 'https:'].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.pathname !== '/' ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      throw new Error('PUBLIC_BASE_URL must be an HTTP(S) origin without a path, query, or fragment.');
+    }
+  } catch (error) {
+    console.error('PUBLIC_BASE_URL is invalid. Use a complete http:// or https:// address.', error);
+    process.exitCode = 1;
+    return;
+  }
+
+  await ensureEvent();
   app.listen(port, '0.0.0.0', () => {
     console.log(`The Ton's Claw is running on http://localhost:${port}`);
-    console.log(`Phones on the same Wi-Fi can open: ${wifiBaseUrl}`);
   });
 }
 

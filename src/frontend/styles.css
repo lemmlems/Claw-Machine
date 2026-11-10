@@ -143,68 +143,6 @@ h1, h2, h3, h4 {
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8);
 }
 
-.address-settings {
-  border-top: 1px solid rgba(142, 111, 65, 0.3);
-  padding-top: 16px;
-}
-
-.address-settings h3 {
-  font-size: 1.8rem;
-}
-
-.address-mode,
-.local-warning {
-  margin: 8px 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: 0.78rem;
-  line-height: 1.45;
-}
-
-.address-mode.wifi {
-  color: #234f3d;
-  background: rgba(134, 204, 151, 0.18);
-}
-
-.address-mode.public {
-  color: #3e315b;
-  background: rgba(187, 166, 221, 0.25);
-}
-
-.address-mode.local,
-.local-warning {
-  color: #7d1d24;
-  background: rgba(191, 55, 55, 0.12);
-  border: 1px solid rgba(153, 34, 39, 0.3);
-}
-
-.address-form {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.address-form label {
-  font-size: 0.74rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--gold-deep);
-}
-
-.address-form input {
-  min-width: 0;
-  border: 1px solid rgba(101, 68, 42, 0.26);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.7);
-  padding: 10px;
-}
-
-.address-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .secondary-button {
   border: 1px solid rgba(134, 92, 26, 0.36);
   border-radius: 999px;
@@ -214,11 +152,6 @@ h1, h2, h3, h4 {
   cursor: pointer;
   font-size: 0.7rem;
   letter-spacing: 0.06em;
-}
-
-.secondary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.48;
 }
 
 .print-actions {
@@ -405,12 +338,6 @@ h1, h2, h3, h4 {
 .invitation-qr a {
   font-size: 0.7rem;
   color: #47345f;
-}
-
-.invitation-qr .disabled-link {
-  color: #756d6d;
-  cursor: not-allowed;
-  text-decoration: none;
 }
 
 .mini-seal {
