@@ -48,9 +48,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
-export function ThemeToggle() {
+export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error('ThemeToggle must be used within ThemeProvider.');
+  if (!context) throw new Error('useTheme must be used within ThemeProvider.');
+  return context;
+}
+
+export function ThemeToggle() {
+  const context = useTheme();
 
   const dark = context.theme === 'dark';
   return (

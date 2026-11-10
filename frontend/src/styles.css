@@ -571,14 +571,35 @@ h1, h2, h3, h4 {
 }
 
 .guest-card h1 {
-  font-size: clamp(2.7rem, 10vw, 4.5rem);
-  margin: 18px 0 10px;
+  font-size: clamp(2.2rem, 8.5vw, 3.6rem);
+  line-height: 1.04;
+  margin: 12px 0 14px;
 }
 
 .guest-message {
   font-size: 1.1rem;
   line-height: 1.6;
   margin: 0;
+}
+
+.guest-letter {
+  text-align: justify;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 8px 0 4px;
+  font-size: 0.96rem;
+  line-height: 1.65;
+  color: var(--ink);
+}
+
+.guest-letter p {
+  margin: 0;
+}
+
+.guest-letter-signoff {
+  text-align: left;
+  padding-top: 4px;
 }
 
 .arrival-badge {
@@ -617,6 +638,14 @@ h1, h2, h3, h4 {
   border-radius: 8px;
   padding: 6px 8px;
   overflow-wrap: anywhere;
+}
+
+.whistledown-logo {
+  display: block;
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  margin: -8px auto 10px;
 }
 
 .seal {
