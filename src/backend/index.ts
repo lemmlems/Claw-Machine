@@ -31,7 +31,7 @@ type ParticipantWithQr = Participant & {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const workspaceRoot = path.resolve(__dirname, '../..');
-const distIndex = path.join(workspaceRoot, 'dist', 'client', 'index.html');
+const distIndex = path.join(workspaceRoot, 'dist', 'frontend', 'index.html');
 
 function getAddressState(storedAddress?: string | null) {
   const url = storedAddress ?? process.env.PUBLIC_BASE_URL?.trim() ?? wifiBaseUrl;
@@ -349,7 +349,7 @@ app.get('/activate/:token', (_req: Request, res: Response) => {
 });
 
 if (fs.existsSync(distIndex)) {
-  app.use(express.static(path.join(workspaceRoot, 'dist', 'client')));
+  app.use(express.static(path.join(workspaceRoot, 'dist', 'frontend')));
 }
 
 app.get(/^(?!\/api).*/, (_req: Request, res: Response) => {
