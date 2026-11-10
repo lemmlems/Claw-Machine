@@ -33,13 +33,13 @@ export function ActivationPage({ token }: { token: string }) {
         {state?.valid ? (
           <div className="guest-letter">
             <p>
-              Delightful news has reached my desk, and it is a pleasure to welcome {name} to our gathering. Your presence brings wonderful warmth to the evening, and the ton is already abuzz to see which diamonds shine the brightest.
+              Delightful news has reached my desk, and it is a pleasure to welcome {name} to our gathering. Your presence brings wonderful warmth to the evening, and the event is already abuzz to see which diamonds shine the brightest.
             </p>
             <p>
               Relax, mingle, and enjoy what promises to be an unforgettable night.
             </p>
             <p className="guest-letter-signoff">
-              Yours warmly,<br />
+              Yours truly,<br />
               <strong>Lady Whistledown</strong>
             </p>
           </div>

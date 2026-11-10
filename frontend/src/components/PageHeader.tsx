@@ -6,7 +6,7 @@ export function PageHeader({ children }: { children?: ReactNode }) {
     <header className="topbar">
       <div>
         <p className="eyebrow">Regency Drawing Room</p>
-        <h1>The Ton's Claw</h1>
+        <h1>The Lady Whistledown's Ledger</h1>
       </div>
       <nav className="page-nav" aria-label="Host pages">
         <a href="/">Guest Ledger</a>
