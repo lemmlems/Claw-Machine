@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id                    String        @id @default(cuid())
+  name                  String
+  status                String        @default("OPEN")
+  publicBaseUrl         String?
+  hostTokenHash         String
+  hostPinHash           String?
+  removeWinnerAfterPick Boolean       @default(true)
+  currentRound          Int           @default(1)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  participants          Participant[]
+  winners               Winner[]
+}
+
+model Participant {
+  id              String      @id @default(cuid())
+  eventId         String
+  event           Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name            String
+  nameKey         String
+  activationToken String      @unique
+  status          String      @default("INACTIVE")
+  activatedAt     DateTime?
+  createdAt       DateTime    @default(now())
+  winners         Winner[]
+
+  @@unique([eventId, nameKey])
+  @@index([eventId, status])
+}
+
+model Winner {
+  id            String      @id @default(cuid())
+  eventId       String
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  roundNumber   Int
+  pickedAt      DateTime    @default(now())
+
+  @@index([eventId, pickedAt])
+}
