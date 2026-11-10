@@ -717,6 +717,15 @@ h1, h2, h3, h4 {
   flex: 1;
 }
 
+.guest-card-actions {
+  margin-top: 8px;
+}
+
+.compact-button {
+  padding: 6px 12px;
+  font-size: 0.72rem;
+}
+
 .login-card {
   display: flex;
   flex-direction: column;

@@ -764,6 +764,54 @@
       gap: 14px;
     }
 
+    .manual-add-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--subpanel-border);
+    }
+
+    .manual-role-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--pill-border);
+      background: var(--pill-bg);
+      color: var(--midnight);
+      font-size: 0.74rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .role-pill input {
+      accent-color: var(--gold-deep);
+      margin: 0;
+    }
+
+    .role-pill.checked {
+      background: linear-gradient(135deg, rgba(247, 217, 181, 0.75), rgba(217, 183, 115, 0.55));
+      border-color: rgba(180, 130, 41, 0.8);
+      font-weight: 600;
+    }
+
+    :root[data-theme="dark"] .role-pill.checked {
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.3), rgba(45, 58, 82, 0.88));
+      border-color: rgba(226, 199, 111, 0.85);
+      color: #fffaf0;
+    }
+
     .winner-banner {
       display: none;
       background: linear-gradient(135deg, rgba(234, 206, 130, 0.34), rgba(255, 255, 255, 0.38));
@@ -951,6 +999,24 @@
         <textarea id="namesInput" aria-label="Names in the sample dance card" spellcheck="false"></textarea>
 
         <div class="counter-pill" id="nameCounter" aria-live="polite">0 names</div>
+
+        <div class="manual-add-box" id="manualAddBox">
+          <label class="field-label" for="manualGuestInput">Add guest manually</label>
+          <div class="inline-add">
+            <input id="manualGuestInput" class="text-input interactive-control" placeholder="Guest name">
+            <button id="manualGuestAddButton" class="primary-button interactive-control" type="button">Add</button>
+          </div>
+          <div class="manual-role-row" role="group" aria-label="Manual guest role">
+            <label class="role-pill checked" id="manualRoleEmployeeLabel">
+              <input id="manualRoleEmployee" class="interactive-control" type="radio" name="manualGuestRole" value="EMPLOYEE" checked>
+              <span>Employee</span>
+            </label>
+            <label class="role-pill" id="manualRoleInternLabel">
+              <input id="manualRoleIntern" class="interactive-control" type="radio" name="manualGuestRole" value="INTERN">
+              <span>Intern / Guest</span>
+            </label>
+          </div>
+        </div>
 
         <div id="ledgerExtraControls" hidden style="display: none;">
           <div class="inline-add">
@@ -1258,13 +1324,30 @@
         return computed;
       }
 
+      function computeBallBaseRadius(count) {
+        if (count <= 8) return 34;
+        return Math.max(10, Math.min(34, Math.floor(Math.sqrt(10800 / count))));
+      }
+
+      function syncBallSizes() {
+        const base = computeBallBaseRadius(balls.length);
+        balls.forEach((b) => {
+          const jitter = Math.round((b.sizeJitter || 0) * (base / 34));
+          b.radius = Math.max(10, Math.min(38, base + jitter));
+          b.x = Math.max(138 + b.radius, Math.min(746 - b.radius, b.x));
+          b.y = Math.max(68 + b.radius, Math.min(396 - b.radius, b.y));
+        });
+      }
+
       function newBall(name, id, drop, role = "EMPLOYEE") {
-        const radius = 33 + secureIndex(5);
+        const sizeJitter = secureIndex(4);
+        const radius = computeBallBaseRadius(balls.length + 1) + sizeJitter;
         const ball = {
           id: id || `local-${++nextId}`,
           name,
           role: String(role || "EMPLOYEE").toUpperCase(),
           color: colors[secureIndex(colors.length)],
+          sizeJitter,
           radius,
           x: 175 + secureIndex(530),
           y: drop ? -radius : 396 - radius,
@@ -1288,6 +1371,7 @@
           if (!includeAllRoles && prizeMode === "MAJOR" && role === "INTERN") return;
           newBall(name, null, false, role);
         });
+        syncBallSizes();
         settleBalls();
       }
 
@@ -1352,6 +1436,7 @@
         ball.y = 110;
         ball.vy = 2.5;
         ball.vx = (secureIndex(41) - 20) / 30;
+        syncBallSizes();
       }
 
       function spawnSparkles(x, y, count = 12, customColor = null) {
@@ -1483,55 +1568,59 @@
             ball.vx *= Math.pow(0.82, step);
           }
 
-          // Ragdoll ball-to-ball collisions with reduced restitution + roll-off
-          for (let otherIndex = index + 1; otherIndex < balls.length; otherIndex += 1) {
-            const other = balls[otherIndex];
-            if (other.disintegrating) continue;
-            let dx = ball.x - other.x;
-            const dy = ball.y - other.y;
-            if (Math.abs(dx) < 8 && Math.abs(dy) > 4) {
-              dx = (index % 2 === 0 ? 1 : -1) * 12;
-            }
-            const distance = Math.hypot(dx, dy) || 1;
-            const minDistance = ball.radius + other.radius - 1;
-            if (distance < minDistance) {
-              const overlap = minDistance - distance;
-              const nx = dx / distance;
-              const ny = dy / distance;
-
-              // Separate overlapping balls
-              ball.x += nx * overlap * 0.54;
-              other.x -= nx * overlap * 0.54;
-              ball.y += ny * overlap * 0.46;
-              other.y -= ny * overlap * 0.46;
-
-              // Relative velocity impulse with low restitution (0.26)
-              const rvx = ball.vx - other.vx;
-              const rvy = ball.vy - other.vy;
-              const rvn = rvx * nx + rvy * ny;
-              if (rvn < 0) {
-                const restitution = 0.26;
-                const impulse = -(1 + restitution) * rvn * 0.5;
-                ball.vx += impulse * nx;
-                ball.vy += impulse * ny;
-                other.vx -= impulse * nx;
-                other.vy -= impulse * ny;
-
-                // Tangential glancing spin (ragdoll tumble on collision)
-                const tx = -ny;
-                const ty = nx;
-                const rvt = rvx * tx + rvy * ty;
-                ball.va = (ball.va || 0) + rvt * 0.008;
-                other.va = (other.va || 0) - rvt * 0.008;
+          // Ragdoll ball-to-ball collisions with reduced restitution + roll-off (2 passes for dense stacks)
+          for (let pass = 0; pass < 2; pass += 1) {
+            for (let otherIndex = index + 1; otherIndex < balls.length; otherIndex += 1) {
+              const other = balls[otherIndex];
+              if (other.disintegrating) continue;
+              let dx = ball.x - other.x;
+              const dy = ball.y - other.y;
+              if (Math.abs(dx) < Math.max(4, ball.radius * 0.22) && Math.abs(dy) > 4) {
+                dx = (index % 2 === 0 ? 1 : -1) * Math.max(6, ball.radius * 0.35);
               }
+              const distance = Math.hypot(dx, dy) || 1;
+              const minDistance = ball.radius + other.radius - 1;
+              if (distance < minDistance) {
+                const overlap = minDistance - distance;
+                const nx = dx / distance;
+                const ny = dy / distance;
 
-              // Prevent balls from staying perched on top of another ball
-              if (!inRagdollBurst && Math.abs(dy) > 6) {
-                const rollDir = nx >= 0 ? 1 : -1;
-                if (dy < 0) {
-                  ball.vx += rollDir * 0.42 * step;
-                } else {
-                  other.vx -= rollDir * 0.42 * step;
+                // Separate overlapping balls
+                ball.x += nx * overlap * 0.54;
+                other.x -= nx * overlap * 0.54;
+                ball.y += ny * overlap * 0.46;
+                other.y -= ny * overlap * 0.46;
+
+                if (pass === 0) {
+                  // Relative velocity impulse with low restitution (0.26)
+                  const rvx = ball.vx - other.vx;
+                  const rvy = ball.vy - other.vy;
+                  const rvn = rvx * nx + rvy * ny;
+                  if (rvn < 0) {
+                    const restitution = 0.26;
+                    const impulse = -(1 + restitution) * rvn * 0.5;
+                    ball.vx += impulse * nx;
+                    ball.vy += impulse * ny;
+                    other.vx -= impulse * nx;
+                    other.vy -= impulse * ny;
+
+                    // Tangential glancing spin (ragdoll tumble on collision)
+                    const tx = -ny;
+                    const ty = nx;
+                    const rvt = rvx * tx + rvy * ty;
+                    ball.va = (ball.va || 0) + rvt * 0.008;
+                    other.va = (other.va || 0) - rvt * 0.008;
+                  }
+
+                  // Prevent balls from staying perched on top of another ball
+                  if (!inRagdollBurst && Math.abs(dy) > 6) {
+                    const rollDir = nx >= 0 ? 1 : -1;
+                    if (dy < 0) {
+                      ball.vx += rollDir * 0.36 * step;
+                    } else {
+                      other.vx -= rollDir * 0.36 * step;
+                    }
+                  }
                 }
               }
             }
@@ -1627,30 +1716,35 @@
         context.fillStyle = "rgba(255, 255, 255, 0.85)";
         context.fill();
 
-        // Nameplate banner across the center of the ball (rotates with ragdoll spin)
+        // Nameplate banner across the center of the ball (rotates with ragdoll spin and scales with ball radius)
         context.save();
         context.translate(bx, by);
         context.rotate(ball.angle || 0);
+        const scale = Math.max(0.36, Math.min(1.05, r / 34));
         const lines = formatBallLines(ball.name);
-        const plateH = (lines.length > 1 ? 24 : 17) * (1 - dissolve * 0.18);
-        const plateW = r * 1.82;
+        const plateH = (lines.length > 1 ? 23 : 16.5) * scale * (1 - dissolve * 0.18);
+        const plateW = r * 1.84;
+        const plateRadius = Math.max(3, 7 * scale);
         context.beginPath();
-        context.roundRect(-plateW / 2, -plateH / 2, plateW, plateH, 7);
+        context.roundRect(-plateW / 2, -plateH / 2, plateW, plateH, plateRadius);
         context.fillStyle = "rgba(255, 251, 243, 0.92)";
         context.fill();
         context.strokeStyle = "rgba(184, 141, 43, 0.75)";
-        context.lineWidth = 1;
+        context.lineWidth = Math.max(0.6, 1 * scale);
         context.stroke();
 
+        const fontSize = Math.max(5, +(8.8 * scale).toFixed(1));
+        const textPad = Math.max(2, 6 * scale);
+        const lineGap = 4.8 * scale;
         context.fillStyle = "#1a2332";
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.font = '700 8.5px "Inter", "Segoe UI", sans-serif';
+        context.font = `700 ${fontSize}px "Inter", "Segoe UI", sans-serif`;
         if (lines.length === 1) {
-          context.fillText(lines[0], 0, 0.5, plateW - 6);
+          context.fillText(lines[0], 0, 0.5 * scale, plateW - textPad);
         } else {
-          context.fillText(lines[0], 0, -4.8, plateW - 6);
-          context.fillText(lines[1], 0, 5.2, plateW - 6);
+          context.fillText(lines[0], 0, -lineGap, plateW - textPad);
+          context.fillText(lines[1], 0, lineGap, plateW - textPad);
         }
         context.restore();
         context.restore();
@@ -2097,6 +2191,7 @@
         if (ball && liveMode && removeWinner) {
           const index = balls.indexOf(ball);
           if (index >= 0) balls.splice(index, 1);
+          syncBallSizes();
         }
         machineStatus.textContent = `${name} has been chosen as the Diamond of the Season!`;
         setControlsAfterPick();
@@ -2139,7 +2234,7 @@
           fromOpenness: clawOpenness,
           decoyX,
           targetX,
-          targetY: ball ? Math.max(115, ball.y - 34) : 330,
+          targetY: ball ? Math.max(115, ball.y - Math.max(18, ball.radius)) : 330,
           stage: 0,
           openness: clawOpenness,
           slipOffset: 0,
@@ -2379,6 +2474,7 @@
             addDroppedBall(String(participant.name), String(participant.id), String(participant.role || "EMPLOYEE").toUpperCase());
           }
         });
+        syncBallSizes();
         namesInput.value = incoming.map((participant) => String(participant.name)).join("\n");
         renderMaskedNames(incoming.length);
         const modeLabel = prizeMode === "MAJOR" ? "employee" : "arrived guest";
@@ -2429,6 +2525,7 @@
             });
             namesInput.value = allArrived.map((p) => String(p.name)).join("\n");
             renderMaskedNames(allArrived.length);
+            syncBallSizes();
           } else {
             // Sample mode: restore full sample pool first so all names reappear
             if (!fullSampleNames || fullSampleNames.length === 0) {
@@ -2467,6 +2564,7 @@
               balls.splice(i, 1);
             }
           }
+          syncBallSizes();
           balls.forEach((b) => {
             b.settled = false;
           });
@@ -2620,6 +2718,65 @@
         });
       }
 
+      async function addGuestManually() {
+        if (busy) return;
+        const input = element("manualGuestInput");
+        const name = input.value.trim();
+        if (!name) return;
+        const selectedRole = element("manualRoleIntern").checked ? "INTERN" : "EMPLOYEE";
+        setLedgerError("");
+
+        if (liveMode) {
+          try {
+            element("manualGuestAddButton").disabled = true;
+            const response = await fetch("/api/participants", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Accept: "application/json" },
+              body: JSON.stringify({ name, role: selectedRole, arrived: true })
+            });
+            const payload = await response.json();
+            if (response.status === 401) {
+              element("signInMessage").classList.add("visible");
+              throw new Error("The host session has expired. Sign in before adding guests.");
+            }
+            if (!response.ok) {
+              throw new Error(payload.message || "Could not add this guest.");
+            }
+            input.value = "";
+            const syncRes = await fetch("/api/event", { headers: { Accept: "application/json" } });
+            if (syncRes.ok) {
+              const eventPayload = await syncRes.json();
+              applyLivePayload(eventPayload);
+            }
+            if (prizeMode === "MAJOR" && selectedRole === "INTERN") {
+              machineStatus.textContent = `${name} added as Intern / Guest (will join when Minor Prizes is selected).`;
+            } else {
+              machineStatus.textContent = `${name} added to the ballroom vitrine.`;
+            }
+          } catch (error) {
+            setLedgerError(error instanceof Error ? error.message : "Could not add this guest.");
+          } finally {
+            element("manualGuestAddButton").disabled = busy;
+          }
+          return;
+        }
+
+        const names = readNames();
+        sampleRoleMap[name] = selectedRole;
+        if (!fullSampleNames.includes(name)) fullSampleNames.push(name);
+        if (prizeMode === "MAJOR" && selectedRole === "INTERN") {
+          input.value = "";
+          machineStatus.textContent = `${name} saved as Intern / Guest (will appear in Minor Prizes mode).`;
+          saveState();
+          return;
+        }
+        names.push(name);
+        namesInput.value = names.join("\n");
+        input.value = "";
+        updateLedger();
+        saveState();
+      }
+
       function addName() {
         const name = element("addNameInput").value.trim();
         if (!name) return;
@@ -2637,6 +2794,22 @@
         setLedgerError("");
         updateLedger();
         saveState();
+      });
+
+      element("manualGuestAddButton").addEventListener("click", () => {
+        void addGuestManually();
+      });
+      element("manualGuestInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          void addGuestManually();
+        }
+      });
+      [element("manualRoleEmployee"), element("manualRoleIntern")].forEach((radio) => {
+        radio.addEventListener("change", () => {
+          element("manualRoleEmployeeLabel").classList.toggle("checked", element("manualRoleEmployee").checked);
+          element("manualRoleInternLabel").classList.toggle("checked", element("manualRoleIntern").checked);
+        });
       });
 
       element("addNameButton").addEventListener("click", addName);

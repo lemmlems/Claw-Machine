@@ -14,6 +14,7 @@ import { addGossip, setLatestWinner } from './state.js';
 const participantSchema = z.object({
   name: z.string().trim().min(1),
   role: z.enum(['EMPLOYEE', 'INTERN']).default('INTERN'),
+  arrived: z.boolean().optional().default(false),
 });
 const participantRoleSchema = z.object({ role: z.enum(['EMPLOYEE', 'INTERN']) });
 const prizeSchema = z.object({
@@ -200,10 +201,22 @@ apiRouter.post('/participants', asyncRoute(async (req, res) => {
   const nameKey = cleanName.toLowerCase();
   const existing = await prisma.participant.findFirst({ where: { eventId: event.id, nameKey } });
   if (existing) {
+    if (parsed.data.arrived && existing.status === 'INACTIVE') {
+      const updated = await prisma.participant.update({
+        where: { id: existing.id },
+        data: { status: 'ACTIVE', activatedAt: new Date(), role: parsed.data.role },
+      });
+      const combined = await prepareParticipant(updated, getAddressState(event.publicBaseUrl).url);
+      addGossip(`Dearest guests, ${cleanName} has just arrived.`);
+      broadcastState(await getEventPayload());
+      res.status(200).json({ ...combined, message: `${cleanName} has been marked as arrived.` });
+      return;
+    }
     res.status(409).json({ message: 'This guest already has an invitation in the ledger.' });
     return;
   }
 
+  const isArrived = parsed.data.arrived;
   const participant = await prisma.participant.create({
     data: {
       eventId: event.id,
@@ -211,13 +224,41 @@ apiRouter.post('/participants', asyncRoute(async (req, res) => {
       nameKey,
       role: parsed.data.role,
       activationToken: randomBytes(32).toString('base64url'),
-      status: 'INACTIVE',
+      status: isArrived ? 'ACTIVE' : 'INACTIVE',
+      activatedAt: isArrived ? new Date() : null,
     },
   });
   const combined = await prepareParticipant(participant, getAddressState(event.publicBaseUrl).url);
-  addGossip(`Dearest guests, ${cleanName} has been invited to the ball.`);
+  addGossip(
+    isArrived
+      ? `Dearest guests, ${cleanName} has just arrived.`
+      : `Dearest guests, ${cleanName} has been invited to the ball.`,
+  );
   broadcastState(await getEventPayload());
-  res.status(201).json({ ...combined, message: `Invitation prepared for ${cleanName}.` });
+  res.status(201).json({
+    ...combined,
+    message: isArrived ? `${cleanName} has arrived and joined the ball.` : `Invitation prepared for ${cleanName}.`,
+  });
+}));
+
+apiRouter.post('/participants/:id/arrive', asyncRoute(async (req, res) => {
+  const event = await ensureEvent();
+  const existing = await prisma.participant.findFirst({
+    where: { id: req.params.id, eventId: event.id },
+  });
+  if (!existing) {
+    res.status(404).json({ message: 'That guest could not be found.' });
+    return;
+  }
+  if (existing.status === 'INACTIVE') {
+    await prisma.participant.update({
+      where: { id: existing.id },
+      data: { status: 'ACTIVE', activatedAt: new Date() },
+    });
+    addGossip(`Dearest guests, ${existing.name} has just arrived.`);
+    broadcastState(await getEventPayload());
+  }
+  res.json({ ok: true });
 }));
 
 apiRouter.patch('/participants/:id/role', asyncRoute(async (req, res) => {
