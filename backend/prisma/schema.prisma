@@ -20,6 +20,7 @@ model Event {
   updatedAt             DateTime      @updatedAt
   participants          Participant[]
   winners               Winner[]
+  prizes                Prize[]
 }
 
 model Participant {
@@ -28,6 +29,7 @@ model Participant {
   event           Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   name            String
   nameKey         String
+  role            String      @default("EMPLOYEE")
   activationToken String      @unique
   status          String      @default("INACTIVE")
   activatedAt     DateTime?
@@ -44,8 +46,23 @@ model Winner {
   event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   participantId String
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  prizeName     String?
+  prizeCategory String?
   roundNumber   Int
   pickedAt      DateTime    @default(now())
 
   @@index([eventId, pickedAt])
+}
+
+model Prize {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name        String
+  category    String
+  description String   @default("")
+  remaining   Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  @@index([eventId, category])
 }

@@ -1,0 +1,2761 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>The Ton's Claw — The Promenade Claw</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --surface: #fdf9f1;
+      --surface-container: #f1ede6;
+      --parchment: #faf6ee;
+      --ink: #1a2332;
+      --on-surface: #1a2332;
+      --primary: #4a6b82;
+      --primary-dark: #315369;
+      --gold: #c9a84c;
+      --gold-deep: #947528;
+      --secondary-container: #fed977;
+      --tertiary: #7e5265;
+      --blush: #e8c4c4;
+      --navy: #161f30;
+      --outline: #72787d;
+      --error: #ba1a1a;
+      --ivory: #fffaf0;
+      --muted: #5d4f4a;
+      --midnight: #1a2332;
+      --burgundy: #7e5265;
+      --sage: #d9e3d0;
+      --sky: #dfeaf9;
+      --shadow: 0 28px 60px rgba(28, 20, 34, 0.18);
+      --panel-bg: rgba(255, 255, 255, 0.35);
+      --panel-border: rgba(127, 93, 47, 0.4);
+      --panel-inner-border: rgba(162, 125, 61, 0.4);
+      --subpanel-bg: rgba(255, 255, 255, 0.28);
+      --subpanel-border: rgba(119, 82, 37, 0.22);
+      --input-bg: rgba(255, 255, 255, 0.72);
+      --input-border: rgba(101, 68, 42, 0.26);
+      --pill-bg: rgba(255, 255, 255, 0.54);
+      --pill-border: rgba(134, 92, 26, 0.36);
+      --canvas-aspect: 760 / 450;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --surface: #161f30;
+      --surface-container: #202b3d;
+      --parchment: #252e3d;
+      --ink: #f8f2e7;
+      --on-surface: #fffaf0;
+      --primary: #9dc2da;
+      --primary-dark: #b7d9ee;
+      --gold-deep: #e2c76f;
+      --tertiary: #e4b7ca;
+      --outline: #a6afb6;
+      --error: #ffb4ab;
+      --muted: #d3d5d6;
+      --midnight: #fffaf0;
+      --burgundy: #e4b7ca;
+      --sage: #233a39;
+      --sky: #24354a;
+      --blush: #513c4b;
+      --shadow: 0 28px 60px rgba(0, 0, 0, 0.45);
+      --panel-bg: rgba(24, 33, 49, 0.78);
+      --panel-border: rgba(201, 168, 76, 0.45);
+      --panel-inner-border: rgba(201, 168, 76, 0.28);
+      --subpanel-bg: rgba(16, 23, 36, 0.62);
+      --subpanel-border: rgba(201, 168, 76, 0.3);
+      --input-bg: rgba(14, 20, 32, 0.85);
+      --input-border: rgba(201, 168, 76, 0.42);
+      --pill-bg: rgba(32, 43, 61, 0.85);
+      --pill-border: rgba(201, 168, 76, 0.48);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100vh;
+      min-width: 320px;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(248, 229, 195, 0.7), transparent 35%),
+        linear-gradient(135deg, #f8f2e8 0%, #f2dfe7 48%, #dfeaf8 100%);
+      color: var(--ink);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root[data-theme="dark"],
+    :root[data-theme="dark"] body {
+      background:
+        radial-gradient(circle at top, rgba(201, 168, 76, 0.14), transparent 38%),
+        linear-gradient(135deg, #111726 0%, #1b1828 48%, #132132 100%);
+      color: var(--on-surface);
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled, input:disabled, textarea:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 3px;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      margin: 0;
+      color: var(--midnight);
+    }
+
+    p {
+      margin-top: 0;
+    }
+
+    .app-shell {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 32px 18px 48px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 12px 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 0.72rem;
+      color: var(--gold-deep);
+    }
+
+    .topbar h1 {
+      font-size: clamp(3rem, 4vw, 5rem);
+      line-height: 0.9;
+      letter-spacing: 0.04em;
+    }
+
+    .page-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .page-nav a,
+    .nav-button,
+    .theme-toggle,
+    .secondary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      border: 1px solid var(--pill-border);
+      border-radius: 999px;
+      padding: 9px 14px;
+      background: var(--pill-bg);
+      color: var(--midnight);
+      cursor: pointer;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
+
+    .page-nav a:hover,
+    .nav-button:hover:not(:disabled),
+    .theme-toggle:hover:not(:disabled),
+    .secondary-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    :root[data-theme="dark"] .page-nav a:hover,
+    :root[data-theme="dark"] .nav-button:hover:not(:disabled),
+    :root[data-theme="dark"] .theme-toggle:hover:not(:disabled),
+    :root[data-theme="dark"] .secondary-button:hover:not(:disabled) {
+      background: rgba(48, 63, 88, 0.95);
+    }
+
+    .primary-button,
+    .select-button {
+      border: none;
+      border-radius: 999px;
+      padding: 13px 22px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.74rem;
+      font-weight: 600;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .primary-button {
+      background: linear-gradient(135deg, #f7d9b5, #d9b773);
+      color: #341b1d;
+      box-shadow: 0 10px 18px rgba(152, 104, 29, 0.2);
+    }
+
+    .select-button {
+      background: linear-gradient(135deg, #d8bed8, #c48cb3);
+      color: #25192b;
+      box-shadow: 0 12px 24px rgba(126, 82, 101, 0.24);
+    }
+
+    :root[data-theme="dark"] .primary-button {
+      color: #1a1412;
+      background: linear-gradient(135deg, #f7dfad, #c9a84c);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    :root[data-theme="dark"] .select-button {
+      color: #1f1224;
+      background: linear-gradient(135deg, #e5c9e5, #c48cb3);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .primary-button:hover:not(:disabled),
+    .select-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .claw-layout {
+      display: grid;
+      grid-template-columns: minmax(270px, 330px) minmax(0, 1fr) minmax(270px, 330px);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--panel-border);
+      border-radius: 28px;
+      background: var(--panel-bg);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      inset: 12px;
+      border: 1px solid var(--panel-inner-border);
+      border-radius: 18px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .sidebar-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sidebar-panel h2,
+    .machine-header h2 {
+      font-size: 2.2rem;
+      margin-bottom: 2px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--gold-deep);
+      margin-bottom: 4px;
+    }
+
+    .text-input,
+    textarea {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--input-border);
+      border-radius: 14px;
+      background: var(--input-bg);
+      color: var(--midnight);
+      padding: 11px 14px;
+      font-size: 0.95rem;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    }
+
+    :root[data-theme="dark"] .text-input,
+    :root[data-theme="dark"] textarea {
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    textarea {
+      flex: 1;
+      min-height: 240px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .masked-names {
+      flex: 1;
+      display: grid;
+      align-content: start;
+      gap: 0;
+      min-height: 240px;
+      overflow: auto;
+      border: 1px solid var(--subpanel-border);
+      border-radius: 14px;
+      background: var(--subpanel-bg);
+      padding: 6px 12px;
+    }
+
+    .masked-name-row {
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--subpanel-border);
+      color: var(--gold-deep);
+      letter-spacing: 0.18em;
+      font-size: 0.85rem;
+    }
+
+    .masked-name-row:last-child {
+      border-bottom: 0;
+    }
+
+    .masked-names[hidden],
+    textarea[hidden],
+    [hidden] {
+      display: none !important;
+    }
+
+    .inline-add {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .counter-pill {
+      display: inline-flex;
+      align-self: flex-start;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--subpanel-bg);
+      border: 1px solid var(--subpanel-border);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold-deep);
+    }
+
+    .toggle-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 0.86rem;
+      color: var(--midnight);
+      cursor: pointer;
+    }
+
+    .toggle-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--gold-deep);
+    }
+
+    .machine-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .ticker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 18px;
+      border-radius: 16px;
+      background: var(--subpanel-bg);
+      border: 1px solid var(--subpanel-border);
+      font-size: 0.82rem;
+      color: var(--midnight);
+    }
+
+    .ticker-badge {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(224, 214, 176, 0.55);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--midnight);
+    }
+
+    :root[data-theme="dark"] .ticker-badge {
+      background: rgba(201, 168, 76, 0.22);
+      color: #fffaf0;
+    }
+
+    .vitrine-stage {
+      position: relative;
+      border-radius: 22px;
+      border: 1px solid var(--panel-inner-border);
+      background: var(--subpanel-bg);
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25), 0 14px 34px rgba(26, 35, 50, 0.12);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: var(--canvas-aspect);
+    }
+
+    /* Full-screen announcement cutscene overlay */
+    .cutscene-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at center, rgba(254, 217, 119, 0.18) 0%, rgba(6, 9, 16, 0.84) 68%),
+        rgba(5, 7, 12, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .cutscene-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .cutscene-stage {
+      position: relative;
+      width: min(560px, 94vw);
+      min-height: 420px;
+      display: grid;
+      place-items: center;
+    }
+
+    .cutscene-rays {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg 18deg,
+        rgba(254, 217, 119, 0.34) 18deg 32deg,
+        transparent 32deg 60deg,
+        rgba(254, 217, 119, 0.28) 60deg 74deg,
+        transparent 74deg 108deg,
+        rgba(254, 217, 119, 0.34) 108deg 122deg,
+        transparent 122deg 156deg,
+        rgba(254, 217, 119, 0.28) 156deg 170deg,
+        transparent 170deg 204deg,
+        rgba(254, 217, 119, 0.34) 204deg 218deg,
+        transparent 218deg 252deg,
+        rgba(254, 217, 119, 0.28) 252deg 266deg,
+        transparent 266deg 300deg,
+        rgba(254, 217, 119, 0.34) 300deg 314deg,
+        transparent 314deg 360deg
+      );
+      filter: blur(2px);
+      opacity: 0;
+      transform: scale(0.4) rotate(0deg);
+      transition: opacity 0.45s ease, transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .cutscene-overlay.phase-anticipate .cutscene-rays {
+      opacity: 0.65;
+      transform: scale(0.9) rotate(25deg);
+      animation: spin-rays 7s linear infinite;
+    }
+
+    .cutscene-overlay.phase-open .cutscene-rays,
+    .cutscene-overlay.phase-reveal .cutscene-rays {
+      opacity: 1;
+      transform: scale(1.3) rotate(60deg);
+      animation: spin-rays 11s linear infinite;
+    }
+
+    @keyframes spin-rays {
+      from { transform: scale(1.2) rotate(0deg); }
+      to { transform: scale(1.2) rotate(360deg); }
+    }
+
+    .capsule-ball {
+      position: relative;
+      width: 184px;
+      height: 184px;
+      display: grid;
+      place-items: center;
+      z-index: 2;
+    }
+
+    .cutscene-overlay.phase-anticipate .capsule-ball {
+      animation: capsule-tremble 0.9s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+    }
+
+    @keyframes capsule-tremble {
+      0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+      15% { transform: translate(-4px, 2px) rotate(-5deg) scale(1.03); }
+      30% { transform: translate(5px, -2px) rotate(6deg) scale(1.05); }
+      45% { transform: translate(-6px, -3px) rotate(-7deg) scale(1.07); }
+      60% { transform: translate(6px, 3px) rotate(7deg) scale(1.09); }
+      75% { transform: translate(-7px, 2px) rotate(-9deg) scale(1.11); }
+      90% { transform: translate(7px, -3px) rotate(8deg) scale(1.12); }
+    }
+
+    .capsule-half {
+      position: absolute;
+      left: 0;
+      width: 184px;
+      height: 92px;
+      background:
+        radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.92), transparent 35%),
+        radial-gradient(circle at 50% 50%, var(--ball-color, #d9b85d), #6e5233 95%);
+      border: 2px solid #f6df9d;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), inset 0 0 16px rgba(255, 255, 255, 0.42);
+      transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.55s ease;
+    }
+
+    .capsule-top {
+      top: 0;
+      border-radius: 92px 92px 8px 8px;
+      border-bottom: 4px solid #e7c66a;
+      transform-origin: center bottom;
+    }
+
+    .capsule-bottom {
+      bottom: 0;
+      border-radius: 8px 8px 92px 92px;
+      border-top: 4px solid #e7c66a;
+      transform-origin: center top;
+    }
+
+    .capsule-seam-glow {
+      position: absolute;
+      left: -16px;
+      right: -16px;
+      top: 50%;
+      height: 10px;
+      margin-top: -5px;
+      border-radius: 999px;
+      background: radial-gradient(circle, #fffdf4 0%, #fed977 55%, transparent 100%);
+      box-shadow: 0 0 28px 10px rgba(254, 217, 119, 0.9);
+      opacity: 0;
+      transform: scaleX(0.3);
+      transition: opacity 0.35s ease, transform 0.45s ease;
+    }
+
+    .cutscene-overlay.phase-anticipate .capsule-seam-glow {
+      opacity: 1;
+      transform: scaleX(1.18);
+    }
+
+    .capsule-seal {
+      position: absolute;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #f9eabe, #c9a84c);
+      border: 2px solid #fff8e6;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+      display: grid;
+      place-items: center;
+      color: #341b1d;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      z-index: 3;
+      transition: transform 0.45s ease, opacity 0.35s ease;
+    }
+
+    .cutscene-overlay.phase-open .capsule-top,
+    .cutscene-overlay.phase-reveal .capsule-top {
+      transform: translateY(-135px) rotate(-14deg) scale(0.84);
+      opacity: 0.28;
+    }
+
+    .cutscene-overlay.phase-open .capsule-bottom,
+    .cutscene-overlay.phase-reveal .capsule-bottom {
+      transform: translateY(135px) rotate(12deg) scale(0.84);
+      opacity: 0.28;
+    }
+
+    .cutscene-overlay.phase-open .capsule-seal,
+    .cutscene-overlay.phase-reveal .capsule-seal {
+      transform: scale(1.8);
+      opacity: 0;
+    }
+
+    .cutscene-scroll {
+      position: relative;
+      z-index: 4;
+      width: min(480px, 92vw);
+      padding: 36px 32px 30px;
+      border-radius: 30px;
+      border: 1px solid rgba(201, 168, 76, 0.78);
+      background:
+        radial-gradient(circle at top, rgba(254, 217, 119, 0.32), transparent 65%),
+        rgba(253, 249, 241, 0.98);
+      color: #1a2332;
+      box-shadow: 0 32px 72px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(201, 168, 76, 0.4);
+      text-align: center;
+      opacity: 0;
+      transform: scale(0.25) translateY(24px);
+      transition: opacity 0.48s cubic-bezier(0.16, 1, 0.3, 1), transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+    }
+
+    .cutscene-scroll::before {
+      content: '';
+      position: absolute;
+      inset: 10px;
+      border: 1px solid rgba(201, 168, 76, 0.42);
+      border-radius: 22px;
+      pointer-events: none;
+    }
+
+    :root[data-theme="dark"] .cutscene-scroll {
+      background:
+        radial-gradient(circle at top, rgba(201, 168, 76, 0.25), transparent 65%),
+        rgba(24, 33, 49, 0.98);
+      color: #fffaf0;
+    }
+
+    .cutscene-overlay.phase-reveal .cutscene-scroll {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+    }
+
+    .cutscene-Overlay-caption {
+      position: absolute;
+      bottom: -12px;
+      margin: 0;
+      color: #fffaf0;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.65rem;
+      font-style: italic;
+      letter-spacing: 0.04em;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+      transition: opacity 0.25s ease;
+    }
+
+    .cutscene-overlay.phase-reveal .cutscene-Overlay-caption {
+      opacity: 0;
+    }
+
+    .cutscene-scroll h2 {
+      font-size: clamp(2.5rem, 4.5vw, 3.8rem);
+      margin: 10px 0 12px;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .cutscene-scroll p {
+      margin: 0 0 22px;
+      font-size: 1.04rem;
+      color: var(--muted);
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 0 2px;
+    }
+
+    .prize-mode-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .prize-mode-button {
+      border: 1px solid var(--pill-border);
+      border-radius: 999px;
+      padding: 10px 20px;
+      background: var(--pill-bg);
+      color: var(--midnight);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      font-size: 0.72rem;
+      font-weight: 600;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .prize-mode-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .prize-mode-button.active {
+      background: linear-gradient(135deg, #f7d9b5, #d9b773);
+      color: #341b1d;
+      border-color: rgba(180, 130, 41, 0.85);
+      box-shadow: 0 8px 18px rgba(152, 104, 29, 0.24);
+    }
+
+    :root[data-theme="dark"] .prize-mode-button.active {
+      color: #1a1412;
+      background: linear-gradient(135deg, #f7dfad, #c9a84c);
+      border-color: rgba(226, 199, 111, 0.9);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+    }
+
+    .lever-button {
+      min-width: min(320px, 100%);
+      padding: 15px 30px;
+      font-size: 0.82rem;
+      letter-spacing: 0.14em;
+    }
+
+    .aux-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .winner-banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(234, 206, 130, 0.34), rgba(255, 255, 255, 0.38));
+      border: 1px solid rgba(180, 130, 41, 0.42);
+      border-radius: 24px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    :root[data-theme="dark"] .winner-banner {
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.22), rgba(32, 43, 61, 0.78));
+      border-color: rgba(201, 168, 76, 0.55);
+    }
+
+    .winner-banner.visible {
+      display: block;
+    }
+
+    .winner-banner h3 {
+      font-size: clamp(2rem, 3.4vw, 3.1rem);
+      margin: 4px 0 6px;
+      overflow-wrap: anywhere;
+    }
+
+    .winner-banner p {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .vault-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 520px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .scandal-chip {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: var(--subpanel-bg);
+      border: 1px solid var(--subpanel-border);
+    }
+
+    .scandal-chip em {
+      font-style: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.68rem;
+      color: var(--gold-deep);
+    }
+
+    .scandal-chip strong {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.55rem;
+      font-weight: 600;
+      line-height: 1.05;
+      color: var(--midnight);
+      overflow-wrap: anywhere;
+    }
+
+    .scandal-chip small {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .empty-state {
+      margin: 0;
+      line-height: 1.6;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .form-error {
+      background: rgba(191, 55, 55, 0.12);
+      color: #7d1d24;
+      border: 1px solid rgba(153, 34, 39, 0.3);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin: 0;
+      font-size: 0.82rem;
+    }
+
+    :root[data-theme="dark"] .form-error {
+      color: #ffdad6;
+      background: #56292d;
+      border-color: #9b454b;
+    }
+
+    .live-signin {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: var(--subpanel-bg);
+      border: 1px solid var(--panel-border);
+      font-size: 0.88rem;
+    }
+
+    .live-signin.visible {
+      display: block;
+    }
+
+    .live-signin a {
+      color: var(--gold-deep);
+      font-weight: 600;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .confetti {
+      position: fixed;
+      z-index: 25;
+      top: -12px;
+      width: 8px;
+      height: 13px;
+      border-radius: 2px;
+      pointer-events: none;
+      animation: fall var(--fall-time) linear forwards;
+    }
+
+    @keyframes fall {
+      to {
+        transform: translate3d(var(--drift), 105vh, 0) rotate(720deg);
+      }
+    }
+
+    @media (max-width: 1120px) {
+      .claw-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Regency Drawing Room</p>
+        <h1>The Promenade Claw</h1>
+      </div>
+      <nav class="page-nav" aria-label="Host pages">
+        <a href="/">Guest Ledger</a>
+        <a href="/claw">The Promenade Claw</a>
+        <button id="soundButton" class="nav-button" type="button" aria-label="Unmute sounds">♫ Sound off</button>
+        <button id="themeButton" class="theme-toggle" type="button" aria-label="Switch to dark theme">☾ Dark</button>
+        <button id="signOutButton" class="nav-button" type="button">Sign out</button>
+      </nav>
+    </header>
+
+    <div id="signInMessage" class="live-signin" role="status">
+      Please <a href="/">sign in with the host PIN</a> before using arrived guests. You may continue with sample names in the meantime.
+    </div>
+
+    <div class="claw-layout">
+      <aside class="panel sidebar-panel" id="societyLedger" aria-label="Society Ledger">
+        <div>
+          <p class="eyebrow">Ballroom Roster</p>
+          <h2>Society Ledger</h2>
+        </div>
+
+        <label class="field-label" for="namesInput">Dance card · one name per line</label>
+        <label class="toggle-row"><input id="hideNamesToggle" type="checkbox"> Conceal guest names</label>
+        <div id="maskedNames" class="masked-names" aria-label="Guest names concealed"></div>
+        <textarea id="namesInput" aria-label="Names in the sample dance card" spellcheck="false"></textarea>
+
+        <div class="counter-pill" id="nameCounter" aria-live="polite">0 names</div>
+
+        <div id="ledgerExtraControls" hidden style="display: none;">
+          <div class="inline-add">
+            <label class="sr-only" for="addNameInput">Add a guest</label>
+            <input id="addNameInput" class="text-input" placeholder="Lady Henrietta Hyde">
+            <button id="addNameButton" class="primary-button" type="button">Add</button>
+          </div>
+
+          <div class="button-row">
+            <button id="reshuffleButton" class="secondary-button" type="button">Reshuffle</button>
+            <button id="resetButton" class="secondary-button" type="button">Reset</button>
+          </div>
+
+          <label class="toggle-row"><input id="removeWinnerToggle" type="checkbox" checked> Remove winner after draw</label>
+
+          <div class="button-row">
+            <button id="liveModeButton" class="secondary-button" type="button">Use arrived guests</button>
+            <button id="sampleModeButton" class="secondary-button" type="button" hidden>Use sample names</button>
+          </div>
+        </div>
+
+        <p id="ledgerStatus" class="form-error" role="status" hidden></p>
+      </aside>
+
+      <main class="panel machine-panel" aria-label="The Promenade Claw Machine">
+        <div class="ticker">
+          <span id="machineStatus">The ballroom vitrine awaits its next selection.</span>
+          <span id="liveBanner" class="ticker-badge">Sample Dance Card</span>
+        </div>
+
+        <div class="vitrine-stage">
+          <canvas id="machineCanvas" aria-label="Automated Regency claw machine with concealed guest baubles." role="img"></canvas>
+        </div>
+
+        <div class="controls-bar" aria-label="Claw machine controls">
+          <div class="prize-mode-bar" role="group" aria-label="Prize category selection">
+            <button id="minorPrizeButton" class="prize-mode-button active interactive-control" type="button">
+              Minor Prizes
+            </button>
+            <button id="majorPrizeButton" class="prize-mode-button interactive-control" type="button">
+              Major Prizes
+            </button>
+          </div>
+          <button id="leverButton" class="select-button lever-button interactive-control" type="button">
+            Select the Diamond
+          </button>
+          <div class="aux-controls">
+            <button id="shuffleVitrineButton" class="secondary-button interactive-control" type="button">Shuffle</button>
+            <button id="skipAnimationButton" class="secondary-button" type="button" hidden>Skip to reveal</button>
+          </div>
+        </div>
+      </main>
+
+      <aside class="panel sidebar-panel" id="vaultPanel" aria-label="Vault Hopper history">
+        <div>
+          <p class="eyebrow">Scandal Sheet · Past Picks</p>
+          <h2>Vault Hopper</h2>
+        </div>
+        <div class="vault-list" id="historyList" aria-live="polite"></div>
+      </aside>
+    </div>
+
+    <div id="cutsceneOverlay" class="cutscene-overlay" role="dialog" aria-modal="true" aria-labelledby="cutsceneWinnerName">
+      <div class="cutscene-stage">
+        <div class="cutscene-rays" aria-hidden="true"></div>
+
+        <div id="capsuleBall" class="capsule-ball" aria-hidden="true">
+          <div class="capsule-half capsule-top"></div>
+          <div class="capsule-half capsule-bottom"></div>
+          <div class="capsule-seam-glow"></div>
+          <div class="capsule-seal">✦</div>
+        </div>
+
+        <div class="cutscene-scroll">
+          <p class="eyebrow" id="cutsceneKicker">The Diamond of the Season</p>
+          <h2 id="cutsceneWinnerName"></h2>
+          <p id="cutsceneMessage">Darling, you are the Diamond of the Season!</p>
+          <button id="closeCutsceneButton" class="primary-button" type="button">Continue the Ball</button>
+        </div>
+
+        <p id="cutsceneCaption" class="cutscene-Overlay-caption">The royal capsule trembles with anticipation…</p>
+      </div>
+    </div>
+
+    <div id="announcement" class="sr-only" aria-live="assertive"></div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+      const sampleNames = [
+        "Lady Henrietta Hyde", "Mr. Edmund Ashford", "Miss Clara Beaumont",
+        "Viscount William Thorne", "Miss Eliza Fairchild", "Mr. Arthur Whitmore",
+        "Lady Juliette Langley", "Miss Amelia Hartwell", "Mr. Sebastian Vale",
+        "Miss Beatrice Rowan", "Lord Frederick Bell", "Miss Arabella Finch"
+      ];
+      const sampleRoleMap = {
+        "Lady Henrietta Hyde": "EMPLOYEE",
+        "Mr. Edmund Ashford": "EMPLOYEE",
+        "Miss Clara Beaumont": "INTERN",
+        "Viscount William Thorne": "EMPLOYEE",
+        "Miss Eliza Fairchild": "INTERN",
+        "Mr. Arthur Whitmore": "EMPLOYEE",
+        "Lady Juliette Langley": "INTERN",
+        "Miss Amelia Hartwell": "EMPLOYEE",
+        "Mr. Sebastian Vale": "INTERN",
+        "Miss Beatrice Rowan": "EMPLOYEE",
+        "Lord Frederick Bell": "INTERN",
+        "Miss Arabella Finch": "EMPLOYEE"
+      };
+      const colors = ["#d8e6f2", "#e8c878", "#d2bede", "#ebbcc0", "#f4e6ca", "#c5d8c8"];
+      const storageKey = "tons-claw-society-ledger-v1";
+      const themeStorageKey = "tons-claw-theme";
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const element = (id) => document.getElementById(id);
+      const canvas = element("machineCanvas");
+      const context = canvas.getContext("2d");
+      const namesInput = element("namesInput");
+      const machineStatus = element("machineStatus");
+      const ledgerStatus = element("ledgerStatus");
+      let balls = [];
+      const sparkles = [];
+      let history = [];
+      let liveMode = false;
+      let prizeMode = "MINOR";
+      let fullSampleNames = sampleNames.slice();
+      let latestLiveParticipants = [];
+      let queuedLivePayload = null;
+      let busy = false;
+      let clawX = 395;
+      let clawY = 128;
+      let clawOpenness = 0.72;
+      let clawSwing = 0;
+      let clawSwingVel = 0;
+      let lastClawX = 395;
+      let phase = null;
+      let lottoShuffle = null;
+      let audioContext = null;
+      let soundEnabled = false;
+      let removeWinner = true;
+      let hideNames = false;
+      let pickOrder = 0;
+      let winnerBall = null;
+      let winnerResult = null;
+      let lastTime = 0;
+      let nextId = 0;
+      let cutsceneTimers = [];
+      let activeCutsceneResolver = null;
+
+      function setLedgerError(msg) {
+        if (!msg) {
+          ledgerStatus.textContent = "";
+          ledgerStatus.hidden = true;
+        } else {
+          ledgerStatus.textContent = msg;
+          ledgerStatus.hidden = false;
+        }
+      }
+
+      function readState() {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          const storedTheme = localStorage.getItem(themeStorageKey) === "dark" ? "dark" : "light";
+          if (!raw) {
+            return {
+              names: sampleNames.slice(),
+              history: [],
+              removeWinner: true,
+              hideNames: false,
+              theme: storedTheme
+            };
+          }
+          const saved = JSON.parse(raw);
+          const hasSavedNames = Array.isArray(saved.names);
+          const savedNames = hasSavedNames
+            ? saved.names.map((name) => String(name).trim()).filter(Boolean)
+            : sampleNames.slice();
+          return {
+            names: hasSavedNames ? savedNames : sampleNames.slice(),
+            history: Array.isArray(saved.history) ? saved.history.filter((item) => item && typeof item === "object").slice(0, 100) : [],
+            removeWinner: saved.removeWinner !== false,
+            hideNames: saved.hideNames === true,
+            theme: storedTheme
+          };
+        } catch (_error) {
+          return { names: sampleNames.slice(), history: [], removeWinner: true, hideNames: false, theme: "light" };
+        }
+      }
+
+      const savedState = readState();
+      fullSampleNames = savedState.names.length > 0 ? savedState.names.slice() : sampleNames.slice();
+      history = savedState.history;
+      pickOrder = history.length;
+      removeWinner = savedState.removeWinner;
+      hideNames = savedState.hideNames;
+      element("removeWinnerToggle").checked = removeWinner;
+      element("hideNamesToggle").checked = hideNames;
+      namesInput.value = savedState.names.join("\n");
+      namesInput.hidden = hideNames;
+      element("maskedNames").hidden = !hideNames;
+
+      function saveState() {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify({
+            names: liveMode ? savedState.names : readNames(),
+            history,
+            removeWinner,
+            hideNames,
+            theme: document.documentElement.dataset.theme
+          }));
+          localStorage.setItem(themeStorageKey, document.documentElement.dataset.theme);
+        } catch (_error) {
+          // Ignore storage errors
+        }
+      }
+
+      function readNames() {
+        return namesInput.value.split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
+      }
+
+      function secureIndex(length) {
+        if (!Number.isInteger(length) || length < 1) return -1;
+        const range = 0x100000000;
+        const limit = range - (range % length);
+        const buffer = new Uint32Array(1);
+        let value;
+        do {
+          crypto.getRandomValues(buffer);
+          value = buffer[0];
+        } while (value >= limit);
+        return value % length;
+      }
+
+      function shuffleNames() {
+        if (balls.length > 0) {
+          void shuffleBallsInVitrine();
+          return;
+        }
+        const names = readNames();
+        for (let index = names.length - 1; index > 0; index -= 1) {
+          const swapIndex = secureIndex(index + 1);
+          [names[index], names[swapIndex]] = [names[swapIndex], names[index]];
+        }
+        namesInput.value = names.join("\n");
+        updateLedger();
+        saveState();
+      }
+
+      function updateLedger() {
+        const names = readNames();
+        element("nameCounter").textContent = `${names.length} name${names.length === 1 ? "" : "s"}`;
+        renderMaskedNames(names.length);
+        if (!liveMode) {
+          savedState.names = names;
+          resetBalls(names);
+        }
+      }
+
+      function renderMaskedNames(count) {
+        const list = element("maskedNames");
+        list.replaceChildren();
+        if (count === 0) {
+          const row = document.createElement("div");
+          row.className = "masked-name-row";
+          row.textContent = "No guests in ledger";
+          list.appendChild(row);
+          return;
+        }
+        for (let index = 0; index < count; index += 1) {
+          const row = document.createElement("div");
+          row.className = "masked-name-row";
+          row.textContent = "✦ ••••••••";
+          list.appendChild(row);
+        }
+      }
+
+      function applyTheme(theme) {
+        const dark = theme === "dark";
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+        element("themeButton").textContent = dark ? "☀ Light" : "☾ Dark";
+        element("themeButton").setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+      }
+
+      function setControlsAfterPick() {
+        element("skipAnimationButton").hidden = true;
+        busy = false;
+        enableControls(true);
+        if (queuedLivePayload) {
+          const payload = queuedLivePayload;
+          queuedLivePayload = null;
+          applyLivePayload(payload);
+        }
+      }
+
+      function getSampleRole(name, index = 0) {
+        if (sampleRoleMap[name]) return sampleRoleMap[name];
+        let hash = 0;
+        const text = String(name || "");
+        for (let i = 0; i < text.length; i += 1) {
+          hash = (hash * 31 + text.charCodeAt(i)) | 0;
+        }
+        const computed = (Math.abs(hash) + index) % 2 === 0 ? "EMPLOYEE" : "INTERN";
+        sampleRoleMap[name] = computed;
+        return computed;
+      }
+
+      function newBall(name, id, drop, role = "EMPLOYEE") {
+        const radius = 33 + secureIndex(5);
+        const ball = {
+          id: id || `local-${++nextId}`,
+          name,
+          role: String(role || "EMPLOYEE").toUpperCase(),
+          color: colors[secureIndex(colors.length)],
+          radius,
+          x: 175 + secureIndex(530),
+          y: drop ? -radius : 396 - radius,
+          vx: (secureIndex(101) - 50) / 30,
+          vy: drop ? 1.2 : 0,
+          angle: 0,
+          va: 0,
+          settled: !drop,
+          disintegrating: false,
+          disintegrateProgress: 0,
+          shimmerOffset: secureIndex(628) / 100
+        };
+        balls.push(ball);
+        return ball;
+      }
+
+      function resetBalls(names, includeAllRoles = false) {
+        balls.splice(0, balls.length);
+        names.forEach((name, idx) => {
+          const role = getSampleRole(name, idx);
+          if (!includeAllRoles && prizeMode === "MAJOR" && role === "INTERN") return;
+          newBall(name, null, false, role);
+        });
+        settleBalls();
+      }
+
+      function settleBallArray(targetArray) {
+        const count = targetArray.length;
+        if (count === 0) return;
+        // Spread initial X evenly if any balls are stacked vertically
+        for (let pass = 0; pass < 140; pass += 1) {
+          for (let index = 0; index < count; index += 1) {
+            const ball = targetArray[index];
+            // Strong downward gravity pull every pass
+            ball.y = Math.min(396 - ball.radius, ball.y + 4.5);
+            for (let otherIndex = 0; otherIndex < index; otherIndex += 1) {
+              const other = targetArray[otherIndex];
+              let dx = ball.x - other.x;
+              const dy = ball.y - other.y;
+              // If one ball is perched nearly vertically above another, force it to roll sideways
+              if (Math.abs(dx) < 14 && Math.abs(dy) > 4) {
+                dx = (index % 2 === 0 ? 1 : -1) * 18;
+              }
+              const distance = Math.hypot(dx, dy) || 1;
+              const minimum = ball.radius + other.radius - 1;
+              if (distance < minimum) {
+                const overlap = minimum - distance;
+                const nx = dx / distance;
+                const ny = dy / distance;
+                // Emphasize horizontal spreading so balls fill the floor first
+                ball.x += nx * overlap * 0.72;
+                other.x -= nx * overlap * 0.72;
+                ball.y += ny * overlap * 0.35;
+                other.y -= ny * overlap * 0.35;
+              }
+            }
+            ball.x = Math.max(138 + ball.radius, Math.min(746 - ball.radius, ball.x));
+            ball.y = Math.min(396 - ball.radius, Math.max(72 + ball.radius, ball.y));
+          }
+        }
+      }
+
+      function settleBalls() {
+        settleBallArray(balls);
+      }
+
+      function addDroppedBall(name, id, role = "EMPLOYEE") {
+        const ball = newBall(name, id, true, role);
+        // Choose the horizontal position with the most open space on the floor
+        let bestX = 175 + secureIndex(530);
+        let bestMinDist = -1;
+        for (let attempt = 0; attempt < 14; attempt += 1) {
+          const candidateX = 175 + secureIndex(535);
+          let minDist = Infinity;
+          for (let i = 0; i < balls.length - 1; i += 1) {
+            const d = Math.abs(balls[i].x - candidateX);
+            if (d < minDist) minDist = d;
+          }
+          if (minDist > bestMinDist) {
+            bestMinDist = minDist;
+            bestX = candidateX;
+          }
+        }
+        ball.x = bestX;
+        ball.y = 110;
+        ball.vy = 2.5;
+        ball.vx = (secureIndex(41) - 20) / 30;
+      }
+
+      function spawnSparkles(x, y, count = 12, customColor = null) {
+        for (let i = 0; i < count; i += 1) {
+          const angle = (Math.PI * 2 * i) / count + (secureIndex(30) - 15) * 0.02;
+          const speed = 1.4 + (secureIndex(25) / 10);
+          sparkles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 0.6,
+            life: 1,
+            size: 2.5 + (secureIndex(30) / 10),
+            color: customColor || "#fed977"
+          });
+        }
+      }
+
+      function spawnDisintegrateDust(ball) {
+        const palette = [ball.color || "#e8c878", "#d8ccb8", "#b9ad9b", "#f4e6ca"];
+        for (let i = 0; i < 4; i += 1) {
+          const angle = (secureIndex(628) / 100);
+          const dist = (secureIndex(100) / 100) * ball.radius * 0.9;
+          sparkles.push({
+            x: ball.x + Math.cos(angle) * dist,
+            y: ball.y + Math.sin(angle) * dist,
+            vx: (secureIndex(60) - 20) * 0.035,
+            vy: -(0.6 + (secureIndex(35) / 25)),
+            gravity: -0.015,
+            life: 0.95,
+            size: 1.6 + (secureIndex(24) / 10),
+            color: palette[secureIndex(palette.length)]
+          });
+        }
+      }
+
+      function shuffleBallsInVitrine() {
+        if (balls.length === 0) return Promise.resolve();
+        playTone("shuffle");
+        for (let i = balls.length - 1; i > 0; i -= 1) {
+          const j = secureIndex(i + 1);
+          [balls[i], balls[j]] = [balls[j], balls[i]];
+        }
+        if (!liveMode) {
+          const shuffledNames = balls.map((b) => b.name);
+          namesInput.value = shuffledNames.join("\n");
+          savedState.names = shuffledNames;
+          saveState();
+        }
+
+        // Launch every ball with random ragdoll velocity and rotational spin
+        balls.forEach((ball) => {
+          const dir = secureIndex(2) === 0 ? -1 : 1;
+          ball.vx = dir * (6.5 + (secureIndex(95) / 10));
+          ball.vy = -(9.5 + (secureIndex(75) / 10));
+          ball.va = dir * (0.14 + (secureIndex(22) / 100));
+          ball.settled = false;
+        });
+
+        lottoShuffle = {
+          start: performance.now(),
+          burstDuration: reducedMotion ? 120 : 280
+        };
+        return new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 320 : 950));
+      }
+
+      function updatePhysics(delta) {
+        const step = Math.min(delta / 16.67, 2);
+        const now = performance.now();
+        const inRagdollBurst = Boolean(lottoShuffle && (now - lottoShuffle.start) < lottoShuffle.burstDuration);
+
+        if (lottoShuffle && (now - lottoShuffle.start) >= lottoShuffle.burstDuration) {
+          lottoShuffle = null;
+          machineStatus.textContent = "The baubles have been shuffled.";
+        }
+
+        for (let index = 0; index < balls.length; index += 1) {
+          const ball = balls[index];
+          if (ball.disintegrating) {
+            ball.disintegrateProgress = Math.min(1, (ball.disintegrateProgress || 0) + 0.028 * step);
+            if (ball.disintegrateProgress < 0.92) {
+              spawnDisintegrateDust(ball);
+            }
+            continue;
+          }
+
+          if (inRagdollBurst) {
+            // Chaotic mid-air ragdoll scatter turbulence during the initial burst
+            ball.vx += ((secureIndex(41) - 20) / 18) * step;
+            ball.vy -= (0.25 + (secureIndex(20) / 40)) * step;
+          }
+
+          // Heavy gravity + subtle air drag
+          ball.vy += 0.82 * step;
+          ball.vx *= Math.pow(0.985, step);
+          ball.x += ball.vx * step;
+          ball.y += ball.vy * step;
+          ball.angle = (ball.angle || 0) + (ball.va || 0) * step;
+          ball.va = (ball.va || 0) * Math.pow(0.95, step);
+
+          // Left & right vitrine walls (bounce with reduced restitution)
+          if (ball.x < 138 + ball.radius) {
+            ball.x = 138 + ball.radius;
+            ball.vx = Math.abs(ball.vx) * 0.42;
+            ball.va += ball.vy * 0.015;
+          }
+          if (ball.x > 746 - ball.radius) {
+            ball.x = 746 - ball.radius;
+            ball.vx = -Math.abs(ball.vx) * 0.42;
+            ball.va -= ball.vy * 0.015;
+          }
+
+          // Top ceiling below claw rail
+          if (ball.y < 68 + ball.radius) {
+            ball.y = 68 + ball.radius;
+            ball.vy = Math.abs(ball.vy) * 0.32;
+            ball.va += ball.vx * 0.015;
+          }
+
+          // Floor collision (heavy thud bounce with reduced bounciness)
+          if (ball.y >= 396 - ball.radius) {
+            ball.y = 396 - ball.radius;
+            if (ball.vy > 2.3) {
+              ball.vy = -ball.vy * 0.25;
+              ball.va = ball.vx * 0.024;
+            } else {
+              ball.vy = 0;
+            }
+            ball.vx *= Math.pow(0.82, step);
+          }
+
+          // Ragdoll ball-to-ball collisions with reduced restitution + roll-off
+          for (let otherIndex = index + 1; otherIndex < balls.length; otherIndex += 1) {
+            const other = balls[otherIndex];
+            if (other.disintegrating) continue;
+            let dx = ball.x - other.x;
+            const dy = ball.y - other.y;
+            if (Math.abs(dx) < 8 && Math.abs(dy) > 4) {
+              dx = (index % 2 === 0 ? 1 : -1) * 12;
+            }
+            const distance = Math.hypot(dx, dy) || 1;
+            const minDistance = ball.radius + other.radius - 1;
+            if (distance < minDistance) {
+              const overlap = minDistance - distance;
+              const nx = dx / distance;
+              const ny = dy / distance;
+
+              // Separate overlapping balls
+              ball.x += nx * overlap * 0.54;
+              other.x -= nx * overlap * 0.54;
+              ball.y += ny * overlap * 0.46;
+              other.y -= ny * overlap * 0.46;
+
+              // Relative velocity impulse with low restitution (0.26)
+              const rvx = ball.vx - other.vx;
+              const rvy = ball.vy - other.vy;
+              const rvn = rvx * nx + rvy * ny;
+              if (rvn < 0) {
+                const restitution = 0.26;
+                const impulse = -(1 + restitution) * rvn * 0.5;
+                ball.vx += impulse * nx;
+                ball.vy += impulse * ny;
+                other.vx -= impulse * nx;
+                other.vy -= impulse * ny;
+
+                // Tangential glancing spin (ragdoll tumble on collision)
+                const tx = -ny;
+                const ty = nx;
+                const rvt = rvx * tx + rvy * ty;
+                ball.va = (ball.va || 0) + rvt * 0.008;
+                other.va = (other.va || 0) - rvt * 0.008;
+              }
+
+              // Prevent balls from staying perched on top of another ball
+              if (!inRagdollBurst && Math.abs(dy) > 6) {
+                const rollDir = nx >= 0 ? 1 : -1;
+                if (dy < 0) {
+                  ball.vx += rollDir * 0.42 * step;
+                } else {
+                  other.vx -= rollDir * 0.42 * step;
+                }
+              }
+            }
+          }
+
+          ball.x = Math.max(138 + ball.radius, Math.min(746 - ball.radius, ball.x));
+          ball.y = Math.max(68 + ball.radius, Math.min(396 - ball.radius, ball.y));
+
+          // Self-righting weight so nameplates settle upright once the ball slows down
+          if (!inRagdollBurst && Math.abs(ball.vy) < 1.5 && Math.abs(ball.vx) < 1.8) {
+            ball.angle = Math.atan2(Math.sin(ball.angle || 0), Math.cos(ball.angle || 0));
+            ball.angle *= Math.pow(0.8, step);
+            if (Math.abs(ball.angle) < 0.01) ball.angle = 0;
+          }
+          if (Math.abs(ball.vx) < 0.06) ball.vx = 0;
+        }
+
+        for (let i = sparkles.length - 1; i >= 0; i -= 1) {
+          const sp = sparkles[i];
+          sp.x += sp.vx * step;
+          sp.y += sp.vy * step;
+          sp.vy += (typeof sp.gravity === "number" ? sp.gravity : 0.08) * step;
+          sp.life -= 0.03 * step;
+          if (sp.life <= 0) sparkles.splice(i, 1);
+        }
+      }
+
+      function formatBallLines(name) {
+        const clean = String(name || "").trim();
+        if (clean.length <= 12) return [clean];
+        const parts = clean.split(/\s+/);
+        if (parts.length >= 2) {
+          const mid = Math.ceil(parts.length / 2);
+          return [parts.slice(0, mid).join(" "), parts.slice(mid).join(" ")];
+        }
+        const half = Math.ceil(clean.length / 2);
+        return [clean.slice(0, half), clean.slice(half)];
+      }
+
+      function drawBauble(ball, x = ball.x, y = ball.y, alpha = 1) {
+        const dissolve = ball.disintegrating ? (ball.disintegrateProgress || 0) : 0;
+        const effectiveAlpha = Math.max(0, alpha * (1 - dissolve));
+        if (effectiveAlpha <= 0.01) return;
+
+        const r = ball.radius * (1 - dissolve * 0.22);
+        const bx = x;
+        const by = y - dissolve * 8;
+
+        context.save();
+        context.globalAlpha = effectiveAlpha;
+        context.shadowColor = "rgba(26, 35, 50, 0.24)";
+        context.shadowBlur = 8;
+        context.shadowOffsetY = 4;
+
+        // Pearl / pastel sphere gradient
+        const gradient = context.createRadialGradient(
+          bx - r * 0.35,
+          by - r * 0.42,
+          2,
+          bx,
+          by,
+          r * 1.08
+        );
+        gradient.addColorStop(0, "#ffffff");
+        gradient.addColorStop(0.28, ball.color);
+        gradient.addColorStop(0.85, ball.color);
+        gradient.addColorStop(1, "#7b6548");
+
+        context.beginPath();
+        context.arc(bx, by, r, 0, Math.PI * 2);
+        context.fillStyle = gradient;
+        context.fill();
+
+        // Outer rim highlight
+        context.shadowColor = "transparent";
+        context.strokeStyle = "rgba(255, 255, 255, 0.72)";
+        context.lineWidth = 1.2;
+        context.beginPath();
+        context.arc(bx, by, Math.max(1, r - 0.5), 0, Math.PI * 2);
+        context.stroke();
+
+        // Specular gloss at top-left
+        context.beginPath();
+        context.ellipse(
+          bx - r * 0.32,
+          by - r * 0.44,
+          r * 0.24,
+          r * 0.12,
+          -0.55,
+          0,
+          Math.PI * 2
+        );
+        context.fillStyle = "rgba(255, 255, 255, 0.85)";
+        context.fill();
+
+        // Nameplate banner across the center of the ball (rotates with ragdoll spin)
+        context.save();
+        context.translate(bx, by);
+        context.rotate(ball.angle || 0);
+        const lines = formatBallLines(ball.name);
+        const plateH = (lines.length > 1 ? 24 : 17) * (1 - dissolve * 0.18);
+        const plateW = r * 1.82;
+        context.beginPath();
+        context.roundRect(-plateW / 2, -plateH / 2, plateW, plateH, 7);
+        context.fillStyle = "rgba(255, 251, 243, 0.92)";
+        context.fill();
+        context.strokeStyle = "rgba(184, 141, 43, 0.75)";
+        context.lineWidth = 1;
+        context.stroke();
+
+        context.fillStyle = "#1a2332";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.font = '700 8.5px "Inter", "Segoe UI", sans-serif';
+        if (lines.length === 1) {
+          context.fillText(lines[0], 0, 0.5, plateW - 6);
+        } else {
+          context.fillText(lines[0], 0, -4.8, plateW - 6);
+          context.fillText(lines[1], 0, 5.2, plateW - 6);
+        }
+        context.restore();
+        context.restore();
+      }
+
+      function drawClaw(time) {
+        const x = clawX;
+        const y = clawY;
+        const openness = clawOpenness;
+        const railY = 48;
+        const swingAngle = Math.max(-0.24, Math.min(0.24, clawSwing));
+
+        context.save();
+
+        // Ornate Gilded Carriage on the top rail
+        context.fillStyle = "#b88d2b";
+        context.strokeStyle = "#fff1c2";
+        context.lineWidth = 1.5;
+        context.beginPath();
+        context.roundRect(x - 26, railY - 12, 52, 18, 8);
+        context.fill();
+        context.stroke();
+
+        // Carriage wheels (rotate smoothly with clawX)
+        const wheelAngle = x * 0.08;
+        [-16, 16].forEach((offset) => {
+          context.save();
+          context.translate(x + offset, railY - 12);
+          context.rotate(wheelAngle);
+          context.beginPath();
+          context.arc(0, 0, 5, 0, Math.PI * 2);
+          context.fillStyle = "#e8c872";
+          context.fill();
+          context.stroke();
+          context.restore();
+        });
+
+        // Smooth curved / pendulum cable
+        const headX = x + Math.sin(swingAngle) * 16;
+        const headY = y - 14;
+        context.strokeStyle = "#c9a84c";
+        context.lineWidth = 4.5;
+        context.beginPath();
+        context.moveTo(x, railY + 6);
+        context.quadraticCurveTo(x + Math.sin(swingAngle) * 7, (railY + 6 + headY) * 0.5, headX, headY);
+        context.stroke();
+
+        context.strokeStyle = "#fff4cf";
+        context.lineWidth = 1.4;
+        context.setLineDash([4, 4]);
+        context.beginPath();
+        context.moveTo(x, railY + 6);
+        context.quadraticCurveTo(x + Math.sin(swingAngle) * 7, (railY + 6 + headY) * 0.5, headX, headY);
+        context.stroke();
+        context.setLineDash([]);
+
+        // Translate to the claw head with pendulum swing
+        context.translate(headX, y);
+        context.rotate(swingAngle * 0.65);
+
+        // Articulated 3-Prong Regency Talons
+        const fingerAngles = [-1, 0, 1];
+        fingerAngles.forEach((side) => {
+          context.save();
+          if (side === 0) {
+            // Center back prong (drawn slightly smaller for depth)
+            context.globalAlpha = 0.78;
+          }
+          const baseSpread = side * (0.34 + openness * 0.56);
+          const kneeX = side * (16 + openness * 18);
+          const kneeY = 18 + (1 - openness * 0.35) * 6;
+          const tipX = side * (8 + openness * 24);
+          const tipY = 42 - openness * 5;
+
+          // Outer brass arm
+          context.strokeStyle = "#b88d2b";
+          context.lineWidth = 6;
+          context.lineCap = "round";
+          context.lineJoin = "round";
+          context.beginPath();
+          context.moveTo(side * 9, 4);
+          context.quadraticCurveTo(kneeX + Math.sin(baseSpread) * 6, kneeY, tipX, tipY);
+          context.stroke();
+
+          // Inner gold highlight on arm
+          context.strokeStyle = "#fff1c1";
+          context.lineWidth = 2;
+          context.beginPath();
+          context.moveTo(side * 9, 4);
+          context.quadraticCurveTo(kneeX + Math.sin(baseSpread) * 6, kneeY, tipX, tipY);
+          context.stroke();
+
+          // Knuckle joint jewel
+          context.beginPath();
+          context.arc(kneeX * 0.85, kneeY, 3.2, 0, Math.PI * 2);
+          context.fillStyle = "#fed977";
+          context.fill();
+
+          context.restore();
+        });
+
+        // Ornate Bell-Shaped Claw Crown
+        const headGrad = context.createLinearGradient(-22, -16, 22, 12);
+        headGrad.addColorStop(0, "#fff2c6");
+        headGrad.addColorStop(0.45, "#d7b76d");
+        headGrad.addColorStop(1, "#8f6b20");
+        context.fillStyle = headGrad;
+        context.strokeStyle = "#fff6d6";
+        context.lineWidth = 1.6;
+        context.beginPath();
+        context.roundRect(-21, -14, 42, 22, 10);
+        context.fill();
+        context.stroke();
+
+        // Center glowing gem core (pulses when active)
+        const gemGlow = phase ? 0.75 + Math.sin(time / 90) * 0.25 : 0.45;
+        context.save();
+        context.shadowColor = "rgba(254, 217, 119, 0.9)";
+        context.shadowBlur = phase ? 14 : 6;
+        context.beginPath();
+        context.arc(0, -3, 6, 0, Math.PI * 2);
+        context.fillStyle = phase ? `rgba(255, 240, 175, ${gemGlow})` : "#e5b8c8";
+        context.fill();
+        context.restore();
+
+        context.restore();
+      }
+
+      function drawMachine(time) {
+        const ratio = window.devicePixelRatio || 1;
+        const width = canvas.clientWidth;
+        if (width < 1) return;
+        const height = width * 450 / 760;
+        if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) {
+          canvas.width = Math.round(width * ratio);
+          canvas.height = Math.round(height * ratio);
+        }
+        context.setTransform(canvas.width / 760, 0, 0, canvas.height / 450, 0, 0);
+        context.clearRect(0, 0, 760, 450);
+
+        const isDark = document.documentElement.dataset.theme === "dark";
+
+        // Regency Drawing Room Vitrine Backdrop
+        const bg = context.createLinearGradient(0, 0, 760, 450);
+        if (isDark) {
+          bg.addColorStop(0, "#141d2e");
+          bg.addColorStop(0.5, "#1d263b");
+          bg.addColorStop(1, "#1a1728");
+        } else {
+          bg.addColorStop(0, "#fbf5ea");
+          bg.addColorStop(0.5, "#f5e6ec");
+          bg.addColorStop(1, "#e5eef9");
+        }
+        context.fillStyle = bg;
+        context.fillRect(0, 0, 760, 450);
+
+        // Clip interior elements to the full-width vitrine box
+        context.save();
+        context.beginPath();
+        context.roundRect(10, 10, 740, 430, 18);
+        context.clip();
+
+        // Subtle arched Regency conservatory mullion lines in the background
+        context.save();
+        context.strokeStyle = isDark ? "rgba(201, 168, 76, 0.12)" : "rgba(162, 125, 61, 0.15)";
+        context.lineWidth = 1.5;
+        [255, 442, 629].forEach((archX) => {
+          context.beginPath();
+          context.arc(archX, 175, 76, Math.PI, 0);
+          context.lineTo(archX + 76, 396);
+          context.moveTo(archX - 76, 175);
+          context.lineTo(archX - 76, 396);
+          context.stroke();
+        });
+        context.restore();
+
+        // Floor platform spanning the full vitrine box
+        const floorGrad = context.createLinearGradient(0, 396, 0, 440);
+        if (isDark) {
+          floorGrad.addColorStop(0, "#292238");
+          floorGrad.addColorStop(1, "#171321");
+        } else {
+          floorGrad.addColorStop(0, "#eadbc5");
+          floorGrad.addColorStop(1, "#d5be9c");
+        }
+        context.fillStyle = floorGrad;
+        context.fillRect(10, 396, 740, 44);
+
+        // Velvet Prize Chute (inside the left side of the vitrine box)
+        context.save();
+        context.fillStyle = isDark ? "#23192b" : "#efe1dc";
+        context.strokeStyle = "rgba(201, 168, 76, 0.65)";
+        context.lineWidth = 2;
+        context.beginPath();
+        context.roundRect(22, 296, 108, 132, 16);
+        context.fill();
+        context.stroke();
+
+        // Inner velvet opening
+        const chuteGrad = context.createLinearGradient(32, 320, 32, 418);
+        chuteGrad.addColorStop(0, "#2a1623");
+        chuteGrad.addColorStop(1, "#5c2f45");
+        context.fillStyle = chuteGrad;
+        context.beginPath();
+        context.roundRect(32, 324, 88, 92, 12);
+        context.fill();
+
+        context.fillStyle = isDark ? "#e2c76f" : "#7e5265";
+        context.font = '600 11px "Inter", sans-serif';
+        context.textAlign = "center";
+        context.fillText("ROYAL CHUTE", 76, 315);
+        context.restore();
+
+        // Upper Gilded Rail (fully inside the vitrine box)
+        const railGrad = context.createLinearGradient(145, 42, 145, 56);
+        railGrad.addColorStop(0, "#fff2c4");
+        railGrad.addColorStop(0.5, "#c9a84c");
+        railGrad.addColorStop(1, "#8d6b22");
+        context.fillStyle = railGrad;
+        context.beginPath();
+        context.roundRect(28, 44, 704, 10, 5);
+        context.fill();
+
+        // Draw Baubles in the Vitrine
+        balls.forEach((ball) => {
+          const isHeldWinner = ball === winnerBall && phase && phase.stage >= 4;
+          if (!isHeldWinner) {
+            drawBauble(ball, ball.x, ball.y, 1);
+          }
+        });
+
+        // Draw Held Winner Bauble (when lifted or dropped into chute)
+        if (winnerBall && phase && phase.stage >= 4) {
+          const swingOffset = Math.sin(clawSwing) * 22;
+          const heldX = phase.stage >= 6 ? 76 : clawX + swingOffset;
+          const heldY = phase.stage >= 6
+            ? Math.min(382, (clawY + 40) + phase.dropProgress * 210)
+            : clawY + 40 + (phase.slipOffset || 0);
+          const alpha = phase.stage >= 6 ? Math.max(0, 1 - phase.dropProgress * 1.15) : 1;
+          drawBauble(winnerBall, heldX, heldY, alpha);
+        }
+
+        // Draw Ornate Claw
+        drawClaw(time);
+
+        // Draw Sparkle & Disintegration Dust Particles
+        sparkles.forEach((sp) => {
+          context.save();
+          context.globalAlpha = Math.max(0, Math.min(1, sp.life));
+          const pColor = sp.color || "#fed977";
+          context.fillStyle = pColor;
+          context.shadowColor = pColor;
+          context.shadowBlur = 6;
+          context.beginPath();
+          context.arc(sp.x, sp.y, sp.size, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        });
+
+        // Soft Diagonal Glass Sheen Overlay
+        context.save();
+        context.fillStyle = isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(255, 255, 255, 0.22)";
+        context.beginPath();
+        context.moveTo(185, 10);
+        context.lineTo(280, 10);
+        context.lineTo(455, 440);
+        context.lineTo(375, 440);
+        context.closePath();
+        context.fill();
+        context.restore();
+
+        context.restore();
+
+        // Double Gold Vitrine Outer Frame (encloses both the rail and the Royal Chute)
+        context.strokeStyle = "rgba(201, 168, 76, 0.55)";
+        context.lineWidth = 2.5;
+        context.beginPath();
+        context.roundRect(10, 10, 740, 430, 18);
+        context.stroke();
+      }
+
+      function updateClawIdleAndSwing(now, delta) {
+        const dt = Math.min(delta / 16.67, 2.2);
+        if (!phase) {
+          const targetIdleX = 442 + Math.sin(now / 1200) * 8;
+          const targetIdleY = 104 + Math.cos(now / 900) * 2.5;
+          const blend = 1 - Math.pow(0.88, dt);
+          clawX += (targetIdleX - clawX) * blend;
+          clawY += (targetIdleY - clawY) * blend;
+          clawOpenness += (0.72 - clawOpenness) * blend;
+        }
+        const vx = (clawX - lastClawX) / Math.max(0.5, dt);
+        lastClawX = clawX;
+        const targetAngle = Math.max(-0.22, Math.min(0.22, -vx * 0.022));
+        clawSwingVel += (targetAngle - clawSwing) * 0.18 * dt;
+        clawSwingVel *= Math.pow(0.82, dt);
+        clawSwing += clawSwingVel * dt;
+      }
+
+      function animateFrame(now) {
+        const delta = lastTime ? now - lastTime : 16.67;
+        lastTime = now;
+        updatePhysics(delta);
+        if (phase) updateAnimation(now);
+        updateClawIdleAndSwing(now, delta);
+        drawMachine(now);
+        window.requestAnimationFrame(animateFrame);
+      }
+
+      function dropConfetti() {
+        if (reducedMotion) return;
+        for (let index = 0; index < 36; index += 1) {
+          const piece = document.createElement("i");
+          piece.className = "confetti";
+          piece.setAttribute("aria-hidden", "true");
+          piece.style.left = `${secureIndex(100)}vw`;
+          piece.style.background = ["#c9a84c", "#fed977", "#d8bed8", "#bfd8e8"][secureIndex(4)];
+          piece.style.setProperty("--drift", `${secureIndex(220) - 110}px`);
+          piece.style.setProperty("--fall-time", `${1.8 + secureIndex(18) / 10}s`);
+          document.body.appendChild(piece);
+          window.setTimeout(() => piece.remove(), 4200);
+        }
+      }
+
+      function addHistory(name, prize) {
+        pickOrder += 1;
+        const tags = ["Diamond of the Season", "Toast of the Ton", "Her Majesty's Choice"];
+        history.unshift({
+          name,
+          prize,
+          tag: tags[secureIndex(tags.length)],
+          order: pickOrder,
+          pickedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        });
+        history = history.slice(0, 100);
+        renderHistory();
+        saveState();
+      }
+
+      function renderHistory() {
+        const list = element("historyList");
+        list.replaceChildren();
+        if (history.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "empty-state";
+          empty.textContent = "No guest has been chosen yet. The ballroom awaits.";
+          list.appendChild(empty);
+          return;
+        }
+        history.forEach((item, index) => {
+          const slip = document.createElement("article");
+          slip.className = "scandal-chip";
+          const tag = document.createElement("em");
+          tag.textContent = String(item.tag || "Diamond of the Season");
+          const name = document.createElement("strong");
+          name.textContent = String(item.name || "A mysterious guest");
+          const meta = document.createElement("small");
+          meta.textContent = `Draw #${Number(item.order) || index + 1} · ${String(item.pickedAt || "")}`;
+          slip.append(tag, name, meta);
+          list.appendChild(slip);
+        });
+      }
+
+      function clearCutsceneTimers() {
+        cutsceneTimers.forEach((t) => window.clearTimeout(t));
+        cutsceneTimers = [];
+      }
+
+      function closeCutscene() {
+        clearCutsceneTimers();
+        const overlay = element("cutsceneOverlay");
+        overlay.classList.remove("active", "phase-anticipate", "phase-open", "phase-reveal");
+        if (activeCutsceneResolver) {
+          const resolve = activeCutsceneResolver;
+          activeCutsceneResolver = null;
+          resolve();
+        }
+      }
+
+      function playBallOpeningCutscene(name, message, ballColor, fast) {
+        clearCutsceneTimers();
+        const overlay = element("cutsceneOverlay");
+        const capsule = element("capsuleBall");
+        const headlines = ["The Diamond of the Season", "Toast of the Ton", "A Most Fortunate Selection"];
+        const chosenKicker = headlines[secureIndex(headlines.length)];
+
+        capsule.style.setProperty("--ball-color", ballColor || "#e8c878");
+        element("cutsceneKicker").textContent = chosenKicker;
+        element("cutsceneWinnerName").textContent = name;
+        element("cutsceneMessage").textContent = message || "Darling, you are the Diamond of the Season! 💎";
+        element("cutsceneCaption").textContent = "The royal capsule trembles with anticipation…";
+
+        overlay.classList.remove("phase-open", "phase-reveal");
+        overlay.classList.add("active", "phase-anticipate");
+        playTone("anticipate");
+
+        const anticipateMs = fast || reducedMotion ? 220 : 950;
+        const openMs = fast || reducedMotion ? 320 : 1350;
+
+        return new Promise((resolve) => {
+          activeCutsceneResolver = resolve;
+
+          // Step 2: Ball cracks & splits open with a burst
+          cutsceneTimers.push(window.setTimeout(() => {
+            overlay.classList.remove("phase-anticipate");
+            overlay.classList.add("phase-open");
+            element("cutsceneCaption").textContent = "The seal breaks open…";
+            playTone("open");
+          }, anticipateMs));
+
+          // Step 3: Name scroll unfurls from inside the ball
+          cutsceneTimers.push(window.setTimeout(() => {
+            overlay.classList.add("phase-reveal");
+            dropConfetti();
+            playTone("win");
+            if (activeCutsceneResolver) {
+              const r = activeCutsceneResolver;
+              activeCutsceneResolver = null;
+              r();
+            }
+          }, openMs));
+        });
+      }
+
+      async function announceWinner(name, result, ball) {
+        const fast = reducedMotion || element("skipAnimationButton").dataset.skipReveal === "true";
+        element("skipAnimationButton").dataset.skipReveal = "false";
+
+        const message = result && result.message
+          ? result.message
+          : "Darling, you are the Diamond of the Season! 💎";
+
+        await playBallOpeningCutscene(name, message, ball ? ball.color : "#e8c878", fast);
+
+        element("announcement").textContent = `Revealed winner: ${name}.`;
+        addHistory(name, "");
+
+        if (!liveMode && removeWinner) {
+          const names = readNames().filter((entry) => entry !== name);
+          namesInput.value = names.join("\n");
+          updateLedger();
+          saveState();
+        }
+        if (ball && liveMode && removeWinner) {
+          const index = balls.indexOf(ball);
+          if (index >= 0) balls.splice(index, 1);
+        }
+        machineStatus.textContent = `${name} has been chosen as the Diamond of the Season!`;
+        setControlsAfterPick();
+      }
+
+      function enableControls(enabled) {
+        document.querySelectorAll(".interactive-control").forEach((control) => {
+          control.disabled = !enabled;
+        });
+        ["namesInput", "addNameInput", "addNameButton", "reshuffleButton", "resetButton"].forEach((id) => {
+          element(id).disabled = !enabled || liveMode;
+        });
+        element("removeWinnerToggle").disabled = !enabled;
+        element("hideNamesToggle").disabled = !enabled;
+        element("shuffleVitrineButton").disabled = !enabled;
+        element("soundButton").disabled = !enabled;
+        element("liveModeButton").disabled = !enabled || liveMode;
+        element("sampleModeButton").disabled = !enabled || !liveMode;
+      }
+
+      function startAnimation(ball, result) {
+        busy = true;
+        enableControls(false);
+        element("skipAnimationButton").hidden = false;
+        winnerBall = ball || null;
+        winnerResult = result || null;
+
+        const targetX = ball ? ball.x : 442;
+        // Choose a decoy X on the opposite side of the vitrine for anticipation fake-out
+        const decoyX = targetX > 440
+          ? Math.max(185, targetX - (140 + secureIndex(115)))
+          : Math.min(700, targetX + (140 + secureIndex(115)));
+
+        const fast = reducedMotion;
+        phase = {
+          start: performance.now(),
+          duration: fast ? 1350 : 2650,
+          fromX: clawX,
+          fromY: clawY,
+          fromOpenness: clawOpenness,
+          decoyX,
+          targetX,
+          targetY: ball ? Math.max(115, ball.y - 34) : 330,
+          stage: 0,
+          openness: clawOpenness,
+          slipOffset: 0,
+          dropProgress: 0,
+          sparked: false,
+          clicked: false
+        };
+        machineStatus.textContent = "The claw awakens and scans the vitrine…";
+        element("announcement").textContent = "The claw is selecting a guest.";
+        playTone("motor");
+      }
+
+      function updateAnimation(now) {
+        const progress = Math.min(1, (now - phase.start) / phase.duration);
+        const easeInOutCubic = (v) => (v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2);
+
+        phase.slipOffset = 0;
+
+        if (progress < 0.18) {
+          // Stage 1A: Smoothly glide to decoy position with a gentle inquiry dip
+          phase.stage = 1;
+          const t = progress / 0.18;
+          const p = easeInOutCubic(t);
+          clawX = phase.fromX + (phase.decoyX - phase.fromX) * p;
+          clawY = phase.fromY + (104 - phase.fromY) * p + Math.sin(t * Math.PI) * 14;
+          clawOpenness = phase.fromOpenness + (1.02 - phase.fromOpenness) * p;
+        } else if (progress < 0.36) {
+          // Stage 1B: Smoothly glide from decoy to true target with gentle upward anticipation wind-up
+          phase.stage = 2;
+          const t = (progress - 0.18) / 0.18;
+          const p = easeInOutCubic(t);
+          clawX = phase.decoyX + (phase.targetX - phase.decoyX) * p;
+          clawY = 104 - Math.sin(t * Math.PI) * 12;
+          clawOpenness = 1.02 + 0.14 * p;
+          machineStatus.textContent = "A promising bauble catches the claw's eye…";
+        } else if (progress < 0.52) {
+          // Stage 2: Smooth cubic descent down to the bauble
+          phase.stage = 3;
+          const t = (progress - 0.36) / 0.16;
+          const p = easeInOutCubic(t);
+          clawX = phase.targetX;
+          clawY = 104 + (phase.targetY - 104) * p;
+          clawOpenness = 1.16;
+        } else if (progress < 0.63) {
+          // Stage 3: Smoothly close talons around the bauble
+          phase.stage = 4;
+          const t = (progress - 0.52) / 0.11;
+          const p = easeInOutCubic(Math.min(1, t * 1.6));
+          clawX = phase.targetX;
+          clawY = phase.targetY - Math.sin(t * Math.PI) * 4;
+          clawOpenness = 1.16 - 1.04 * p;
+
+          if (!phase.clicked && t > 0.35) {
+            phase.clicked = true;
+            playTone("click");
+            if (winnerBall) {
+              balls.forEach((b) => {
+                if (b !== winnerBall && Math.abs(b.x - winnerBall.x) < 85) {
+                  b.vx += (b.x < winnerBall.x ? -0.45 : 0.45);
+                  b.vy = 0;
+                  b.settled = false;
+                }
+              });
+            }
+          }
+          machineStatus.textContent = "The talons clasp the bauble…";
+        } else if (progress < 0.79) {
+          // Stage 4: Smoothly hoist the bauble with a gentle mid-lift tension dip
+          phase.stage = 5;
+          const t = (progress - 0.63) / 0.16;
+          const p = easeInOutCubic(t);
+          clawX = phase.targetX;
+          clawY = phase.targetY + (106 - phase.targetY) * p;
+          if (t > 0.32 && t < 0.68) {
+            phase.slipOffset = Math.sin(((t - 0.32) / 0.36) * Math.PI) * 7;
+          }
+          clawOpenness = 0.12;
+          machineStatus.textContent = "Lifting the chosen bauble…";
+        } else if (progress < 0.92) {
+          // Stage 5: Smoothly glide over to the Royal Chute
+          phase.stage = 5;
+          const t = (progress - 0.79) / 0.13;
+          const p = easeInOutCubic(t);
+          clawX = phase.targetX + (76 - phase.targetX) * p;
+          clawY = 106;
+          clawOpenness = 0.12;
+        } else {
+          // Stage 6: Smoothly release the bauble into the chute
+          phase.stage = 6;
+          const t = (progress - 0.92) / 0.08;
+          const p = easeInOutCubic(t);
+          clawX = 76;
+          clawY = 106 + 4 * p;
+          clawOpenness = 0.12 + 0.88 * easeInOutCubic(Math.min(1, t * 1.8));
+          phase.dropProgress = p;
+          if (!phase.sparked) {
+            phase.sparked = true;
+            spawnSparkles(76, 330, 16);
+          }
+        }
+
+        if (progress >= 1) finishAnimation(false);
+      }
+
+      function finishAnimation(skipAnimation) {
+        const result = winnerResult;
+        const ball = winnerBall;
+        const name = result && result.participantName ? result.participantName : ball ? ball.name : "";
+        phase = null;
+        winnerBall = null;
+        winnerResult = null;
+        if (name) {
+          element("skipAnimationButton").dataset.skipReveal = skipAnimation ? "true" : "false";
+          void announceWinner(name, result, ball);
+        } else {
+          machineStatus.textContent = "No bauble was drawn. Please try again.";
+          setControlsAfterPick();
+        }
+      }
+
+      function playTone(kind) {
+        if (!soundEnabled) return;
+        try {
+          if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === "suspended") void audioContext.resume();
+          const now = audioContext.currentTime;
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+
+          if (kind === "win") {
+            oscillator.type = "triangle";
+            oscillator.frequency.setValueAtTime(523.25, now);
+            oscillator.frequency.setValueAtTime(659.25, now + 0.09);
+            oscillator.frequency.setValueAtTime(783.99, now + 0.18);
+            oscillator.frequency.setValueAtTime(1046.5, now + 0.28);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start(now);
+            oscillator.stop(now + 0.56);
+            return;
+          }
+
+          if (kind === "open") {
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(340, now);
+            oscillator.frequency.exponentialRampToValueAtTime(920, now + 0.26);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start(now);
+            oscillator.stop(now + 0.29);
+            return;
+          }
+
+          if (kind === "anticipate") {
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(220, now);
+            oscillator.frequency.linearRampToValueAtTime(440, now + 0.45);
+            gain.gain.setValueAtTime(0.04, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start(now);
+            oscillator.stop(now + 0.5);
+            return;
+          }
+
+          if (kind === "disintegrate") {
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(520, now);
+            oscillator.frequency.exponentialRampToValueAtTime(140, now + 0.55);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start(now);
+            oscillator.stop(now + 0.6);
+            return;
+          }
+
+          if (kind === "shuffle") {
+            oscillator.type = "triangle";
+            oscillator.frequency.setValueAtTime(310, now);
+            oscillator.frequency.linearRampToValueAtTime(520, now + 0.14);
+            oscillator.frequency.linearRampToValueAtTime(380, now + 0.28);
+            gain.gain.setValueAtTime(0.045, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start(now);
+            oscillator.stop(now + 0.32);
+            return;
+          }
+
+          oscillator.type = kind === "motor" ? "triangle" : "sine";
+          oscillator.frequency.value = kind === "click" ? 580 : 140;
+          gain.gain.setValueAtTime(kind === "motor" ? 0.03 : 0.07, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + (kind === "motor" ? 0.35 : 0.2));
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start(now);
+          oscillator.stop(now + (kind === "motor" ? 0.36 : 0.22));
+        } catch (_error) {
+          // Ignore audio errors
+        }
+      }
+
+      function applyLivePayload(payload) {
+        const allParticipants = Array.isArray(payload && payload.participants) ? payload.participants : [];
+        latestLiveParticipants = allParticipants;
+        let incoming = allParticipants.filter((participant) =>
+          removeWinner
+            ? participant.status === "ACTIVE"
+            : participant.status === "ACTIVE" || participant.status === "WON"
+        );
+        if (incoming.length === 0 && !removeWinner) {
+          incoming = allParticipants.filter((participant) => participant.status === "ACTIVE" || participant.status === "WON");
+        }
+        if (prizeMode === "MAJOR") {
+          incoming = incoming.filter((participant) => String(participant.role).toUpperCase() === "EMPLOYEE");
+        }
+        const incomingIds = new Set(incoming.map((participant) => String(participant.id)));
+        for (let index = balls.length - 1; index >= 0; index -= 1) {
+          if (!incomingIds.has(String(balls[index].id))) balls.splice(index, 1);
+        }
+        const existingIds = new Set(balls.map((ball) => String(ball.id)));
+        incoming.forEach((participant) => {
+          const existing = balls.find((b) => String(b.id) === String(participant.id));
+          if (existing) {
+            existing.role = String(participant.role || "EMPLOYEE").toUpperCase();
+            existing.disintegrating = false;
+            existing.disintegrateProgress = 0;
+          } else if (!existingIds.has(String(participant.id))) {
+            addDroppedBall(String(participant.name), String(participant.id), String(participant.role || "EMPLOYEE").toUpperCase());
+          }
+        });
+        namesInput.value = incoming.map((participant) => String(participant.name)).join("\n");
+        renderMaskedNames(incoming.length);
+        const modeLabel = prizeMode === "MAJOR" ? "employee" : "arrived guest";
+        element("nameCounter").textContent = `${incoming.length} ${modeLabel}${incoming.length === 1 ? "" : "s"}`;
+        machineStatus.textContent = `${incoming.length} ${modeLabel}${incoming.length === 1 ? "" : "s"} in the ballroom vitrine.`;
+      }
+
+      async function selectPrizeMode(nextMode) {
+        if (busy) return;
+        closeCutscene();
+        setLedgerError("");
+        prizeMode = nextMode === "MAJOR" ? "MAJOR" : "MINOR";
+
+        element("minorPrizeButton").classList.toggle("active", prizeMode === "MINOR");
+        element("minorPrizeButton").setAttribute("aria-pressed", prizeMode === "MINOR" ? "true" : "false");
+        element("majorPrizeButton").classList.toggle("active", prizeMode === "MAJOR");
+        element("majorPrizeButton").setAttribute("aria-pressed", prizeMode === "MAJOR" ? "true" : "false");
+
+        busy = true;
+        enableControls(false);
+
+        try {
+          if (liveMode) {
+            // Restore all previously picked ('WON') guests back into the active pool
+            const res = await fetch("/api/events/reset-pool", {
+              method: "POST",
+              headers: { Accept: "application/json" }
+            });
+            if (res.ok) {
+              const payload = await res.json();
+              latestLiveParticipants = Array.isArray(payload.participants) ? payload.participants : latestLiveParticipants;
+            }
+            queuedLivePayload = null;
+
+            const allArrived = latestLiveParticipants.filter(
+              (p) => p.status === "ACTIVE" || p.status === "WON"
+            );
+            const existingIds = new Set(balls.map((b) => String(b.id)));
+            allArrived.forEach((p) => {
+              const existing = balls.find((b) => String(b.id) === String(p.id));
+              if (existing) {
+                existing.role = String(p.role || "EMPLOYEE").toUpperCase();
+                existing.disintegrating = false;
+                existing.disintegrateProgress = 0;
+              } else if (!existingIds.has(String(p.id))) {
+                addDroppedBall(String(p.name), String(p.id), String(p.role || "EMPLOYEE").toUpperCase());
+              }
+            });
+            namesInput.value = allArrived.map((p) => String(p.name)).join("\n");
+            renderMaskedNames(allArrived.length);
+          } else {
+            // Sample mode: restore full sample pool first so all names reappear
+            if (!fullSampleNames || fullSampleNames.length === 0) {
+              fullSampleNames = [...sampleNames];
+            }
+            namesInput.value = fullSampleNames.join("\n");
+            resetBalls(fullSampleNames, true);
+            renderMaskedNames(fullSampleNames.length);
+          }
+
+          if (prizeMode === "MINOR") {
+            const count = balls.length;
+            element("nameCounter").textContent = liveMode
+              ? `${count} arrived guest${count === 1 ? "" : "s"}`
+              : `${count} name${count === 1 ? "" : "s"}`;
+            machineStatus.textContent = "Minor Prizes selected — all guests are in the vitrine!";
+            saveState();
+            return;
+          }
+
+          // MAJOR PRIZES: Disintegrate all Intern / Guest balls!
+          const internBalls = balls.filter((b) => String(b.role).toUpperCase() === "INTERN");
+          if (internBalls.length > 0) {
+            machineStatus.textContent = "Major Prizes selected — Interns & Guests are disintegrating from the pool…";
+            internBalls.forEach((b) => {
+              b.disintegrating = true;
+              b.disintegrateProgress = 0;
+            });
+            playTone("disintegrate");
+            await new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 80 : 650));
+          }
+
+          // Remove INTERN balls in-place from vitrine & ledger
+          for (let i = balls.length - 1; i >= 0; i -= 1) {
+            if (String(balls[i].role).toUpperCase() === "INTERN" || balls[i].disintegrating) {
+              balls.splice(i, 1);
+            }
+          }
+          balls.forEach((b) => {
+            b.settled = false;
+          });
+
+          const remainingNames = balls.map((b) => b.name);
+          namesInput.value = remainingNames.join("\n");
+          renderMaskedNames(remainingNames.length);
+          element("nameCounter").textContent = liveMode
+            ? `${remainingNames.length} employee${remainingNames.length === 1 ? "" : "s"}`
+            : `${remainingNames.length} name${remainingNames.length === 1 ? "" : "s"} (Employees)`;
+          machineStatus.textContent = "Major Prizes active — only Employees remain in the vitrine!";
+          saveState();
+        } finally {
+          queuedLivePayload = null;
+          busy = false;
+          enableControls(true);
+        }
+      }
+
+      async function useLiveGuests() {
+        setLedgerError("");
+        try {
+          const response = await fetch("/api/event", { headers: { Accept: "application/json" } });
+          const payload = await response.json();
+          if (response.status === 401) {
+            element("signInMessage").classList.add("visible");
+            return;
+          }
+          if (!response.ok) throw new Error(payload.message || "The arrived guest list could not be loaded.");
+          liveMode = true;
+          element("signInMessage").classList.remove("visible");
+          element("liveBanner").textContent = "Live Arrivals";
+          element("liveModeButton").hidden = true;
+          element("sampleModeButton").hidden = false;
+          applyLivePayload(payload);
+          enableControls(true);
+          if (window.liveStream) window.liveStream.close();
+          window.liveStream = new EventSource("/api/events/stream");
+          let syncingLiveState = false;
+          window.liveStream.addEventListener("state", (event) => {
+            try {
+              const state = JSON.parse(event.data);
+              if (busy || syncingLiveState) queuedLivePayload = state;
+              else applyLivePayload(state);
+            } catch (_error) {
+              setLedgerError("A live guest update could not be read.");
+            }
+          });
+          window.liveStream.addEventListener("connected", () => {
+            if (syncingLiveState) return;
+            syncingLiveState = true;
+            fetch("/api/event", { headers: { Accept: "application/json" } })
+              .then(async (syncResponse) => {
+                const current = await syncResponse.json();
+                if (!syncResponse.ok) throw new Error(current.message || "The live guest list could not be synchronized.");
+                applyLivePayload(current);
+              })
+              .catch((syncError) => {
+                element("signInMessage").classList.add("visible");
+                setLedgerError(syncError instanceof Error ? syncError.message : "The live guest list could not be synchronized.");
+              })
+              .finally(() => {
+                syncingLiveState = false;
+                if (!busy && queuedLivePayload) {
+                  const latest = queuedLivePayload;
+                  queuedLivePayload = null;
+                  applyLivePayload(latest);
+                }
+              });
+          });
+        } catch (error) {
+          setLedgerError(error instanceof Error ? error.message : "The arrived guest list could not be loaded.");
+        }
+      }
+
+      function useSamples() {
+        if (window.liveStream) window.liveStream.close();
+        liveMode = false;
+        queuedLivePayload = null;
+        element("liveBanner").textContent = "Sample Dance Card";
+        element("signInMessage").classList.remove("visible");
+        element("liveModeButton").hidden = false;
+        element("sampleModeButton").hidden = true;
+        namesInput.readOnly = false;
+        fullSampleNames = [...sampleNames];
+        const initialNames = prizeMode === "MAJOR"
+          ? fullSampleNames.filter((name) => getSampleRole(name) === "EMPLOYEE")
+          : fullSampleNames;
+        namesInput.value = initialNames.join("\n");
+        renderHistory();
+        updateLedger();
+        saveState();
+        enableControls(true);
+        machineStatus.textContent = "Sample names restored. The Promenade Claw is ready.";
+      }
+
+      async function pullLever() {
+        if (busy) return;
+        closeCutscene();
+        setLedgerError("");
+
+        if (liveMode) {
+          if (balls.length === 0) {
+            machineStatus.textContent = prizeMode === "MAJOR"
+              ? "No arrived employees are in the vitrine yet."
+              : "No arrived guests are in the vitrine yet.";
+            return;
+          }
+          busy = true;
+          enableControls(false);
+          machineStatus.textContent = "The claw awakens…";
+          try {
+            const response = await fetch("/api/events/select-winner", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Accept: "application/json" },
+              body: JSON.stringify({ removeWinner, prizeCategory: prizeMode })
+            });
+            const payload = await response.json();
+            if (response.status === 401) {
+              element("signInMessage").classList.add("visible");
+              throw new Error("The host session has expired. Sign in, then load arrived guests again.");
+            }
+            if (!response.ok) throw new Error(payload.message || "The server could not select an eligible guest.");
+            const selected = payload.winner;
+            const ball = balls.find((entry) => entry.id === selected.participantId) || newBall(selected.participantName, selected.participantId, false, selected.role || "EMPLOYEE");
+            startAnimation(ball, selected);
+          } catch (error) {
+            busy = false;
+            enableControls(true);
+            machineStatus.textContent = error instanceof Error ? error.message : "The server could not select a winner.";
+          }
+          return;
+        }
+
+        let names = readNames();
+        if (prizeMode === "MAJOR") {
+          names = names.filter((name) => getSampleRole(name) === "EMPLOYEE");
+        }
+        if (names.length === 0) {
+          machineStatus.textContent = prizeMode === "MAJOR"
+            ? "No eligible employees remain in the Society Ledger."
+            : "Add at least one guest to the Society Ledger.";
+          return;
+        }
+
+        const selectedName = names[secureIndex(names.length)];
+        const ball = balls.find((entry) => entry.name === selectedName) || balls[0] || newBall(selectedName, null, false);
+        startAnimation(ball, {
+          participantName: selectedName,
+          message: "Darling, you are the Diamond of the Season! 💎"
+        });
+      }
+
+      function addName() {
+        const name = element("addNameInput").value.trim();
+        if (!name) return;
+        const names = readNames();
+        names.push(name);
+        if (!fullSampleNames.includes(name)) fullSampleNames.push(name);
+        namesInput.value = names.join("\n");
+        element("addNameInput").value = "";
+        setLedgerError("");
+        updateLedger();
+        saveState();
+      }
+
+      namesInput.addEventListener("input", () => {
+        setLedgerError("");
+        updateLedger();
+        saveState();
+      });
+
+      element("addNameButton").addEventListener("click", addName);
+      element("addNameInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") addName();
+      });
+      element("reshuffleButton").addEventListener("click", () => {
+        if (busy) return;
+        machineStatus.textContent = "Shuffling the baubles in the vitrine…";
+        void shuffleBallsInVitrine();
+      });
+      element("shuffleVitrineButton").addEventListener("click", () => {
+        if (busy) return;
+        machineStatus.textContent = "Shuffling the baubles in the vitrine…";
+        void shuffleBallsInVitrine();
+      });
+      element("resetButton").addEventListener("click", () => {
+        fullSampleNames = [...sampleNames];
+        const targetNames = prizeMode === "MAJOR"
+          ? fullSampleNames.filter((name) => getSampleRole(name) === "EMPLOYEE")
+          : fullSampleNames;
+        namesInput.value = targetNames.join("\n");
+        updateLedger();
+        saveState();
+      });
+      element("minorPrizeButton").addEventListener("click", () => {
+        void selectPrizeMode("MINOR");
+      });
+      element("majorPrizeButton").addEventListener("click", () => {
+        void selectPrizeMode("MAJOR");
+      });
+      element("removeWinnerToggle").addEventListener("change", (event) => {
+        removeWinner = event.target.checked;
+        saveState();
+      });
+      element("hideNamesToggle").addEventListener("change", (event) => {
+        hideNames = event.target.checked;
+        namesInput.hidden = hideNames;
+        element("maskedNames").hidden = !hideNames;
+        saveState();
+      });
+      element("liveModeButton").addEventListener("click", useLiveGuests);
+      element("sampleModeButton").addEventListener("click", useSamples);
+      element("leverButton").addEventListener("click", pullLever);
+      element("closeCutsceneButton").addEventListener("click", closeCutscene);
+      element("cutsceneOverlay").addEventListener("click", (event) => {
+        if (event.target === element("cutsceneOverlay") && element("cutsceneOverlay").classList.contains("phase-reveal")) {
+          closeCutscene();
+        }
+      });
+
+      element("skipAnimationButton").addEventListener("click", () => {
+        if (phase) {
+          finishAnimation(true);
+          return;
+        }
+        closeCutscene();
+      });
+
+      element("themeButton").addEventListener("click", () => {
+        const dark = document.documentElement.dataset.theme !== "dark";
+        applyTheme(dark ? "dark" : "light");
+        saveState();
+      });
+
+      window.addEventListener("storage", (event) => {
+        if (event.key === themeStorageKey && (event.newValue === "light" || event.newValue === "dark")) {
+          applyTheme(event.newValue);
+        }
+      });
+
+      element("signOutButton").addEventListener("click", async () => {
+        try {
+          const response = await fetch("/api/auth/logout", { method: "POST", headers: { Accept: "application/json" } });
+          if (!response.ok) throw new Error("Unable to sign out. Please try again.");
+          window.location.assign("/");
+        } catch (error) {
+          setLedgerError(error instanceof Error ? error.message : "Unable to sign out.");
+        }
+      });
+
+      element("soundButton").addEventListener("click", () => {
+        soundEnabled = !soundEnabled;
+        if (soundEnabled && !audioContext) {
+          try {
+            const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextConstructor) audioContext = new AudioContextConstructor();
+          } catch (_error) {
+            soundEnabled = false;
+          }
+        }
+        element("soundButton").textContent = soundEnabled ? "♫ Sound on" : "♫ Sound off";
+        element("soundButton").setAttribute("aria-label", soundEnabled ? "Mute sounds" : "Unmute sounds");
+        if (soundEnabled) playTone("click");
+      });
+
+      window.addEventListener("keydown", (event) => {
+        const target = event.target;
+        const editing = target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(target.tagName));
+        if (editing) return;
+        if (event.code === "Space") {
+          event.preventDefault();
+          void pullLever();
+        } else if (event.key === "Escape") {
+          closeCutscene();
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (window.liveStream) window.liveStream.close();
+      });
+
+      renderHistory();
+      updateLedger();
+      enableControls(true);
+      applyTheme(savedState.theme);
+      window.requestAnimationFrame(animateFrame);
+      void useLiveGuests();
+    })();
+  </script>
+</body>
+</html>

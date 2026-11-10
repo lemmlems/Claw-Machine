@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { createHash } from 'node:crypto';
 
@@ -13,8 +14,11 @@ async function main() {
     return;
   }
 
-  const pepper = process.env.HOST_PIN_PEPPER ?? 'development-pepper';
-  const hostPinHash = createHash('sha256').update(`host:${pepper}`).digest('hex');
+  const hostPin = process.env.HOST_PIN;
+  if (!hostPin) {
+    throw new Error('HOST_PIN is required before seeding the database.');
+  }
+  const hostPinHash = createHash('sha256').update(hostPin).digest('hex');
 
   await prisma.event.create({
     data: {
