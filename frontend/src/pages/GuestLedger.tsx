@@ -99,6 +99,10 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
     (participant) => participant.status === 'WON' || participant.hasWon,
   );
   const isLocalAddress = hostState.publicAddress.isLocal;
+  const printTicketPages = Array.from(
+    { length: Math.ceil(inactiveNames.length / 10) },
+    (_unused, pageIndex) => inactiveNames.slice(pageIndex * 10, (pageIndex + 1) * 10),
+  );
 
   return (
     <div className="app-shell">
@@ -171,13 +175,6 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
               Print invitations
             </button>
           </div>
-          {hostState.winner && (
-            <div className="winner-reveal" aria-live="polite">
-              <p className="eyebrow">The Diamond of the Season</p>
-              <h2>{hostState.winner.participantName}</h2>
-              <p>{hostState.winner.message}</p>
-            </div>
-          )}
 
           <div className="columns">
             <section className="list-panel">
@@ -285,6 +282,86 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
               </div>
             </section>
           </div>
+
+          <section className="print-tickets-sheet" aria-hidden="true">
+            {printTicketPages.map((page, pageIndex) => (
+              <div key={`ticket-page-${pageIndex}`} className="print-ticket-page">
+                {page.map((participant) => (
+                  <article key={`ticket-${participant.id}`} className="print-ticket">
+                    <div className="print-ticket-outer">
+                      <div className="print-ticket-inner">
+                        <div className="ticket-diamonds ticket-diamonds-left" aria-hidden="true">
+                          {Array.from({ length: 17 }).map((_, i) => (
+                            <span key={`dl-${i}`}>◆</span>
+                          ))}
+                        </div>
+                        <div className="ticket-diamonds ticket-diamonds-right" aria-hidden="true">
+                          {Array.from({ length: 17 }).map((_, i) => (
+                            <span key={`dr-${i}`}>◆</span>
+                          ))}
+                        </div>
+
+                        <svg className="ticket-corner-stars ticket-corner-stars-top" viewBox="0 0 180 22" aria-hidden="true">
+                          {/* Top-left colored stars */}
+                          <polygon points="10,2 11.8,6.5 16.5,8 11.8,9.5 10,14 8.2,9.5 3.5,8 8.2,6.5" fill="#c9a84c" />
+                          <polygon points="22,3 23.1,5.6 25.8,6.5 23.1,7.4 22,10 20.9,7.4 18.2,6.5 20.9,5.6" fill="#7e5265" />
+                          <polygon points="9,15 10,17.2 12.2,18 10,18.8 9,21 8,18.8 5.8,18 8,17.2" fill="#4a6b82" />
+                          {/* Top-right colored stars */}
+                          <polygon points="170,2 171.8,6.5 176.5,8 171.8,9.5 170,14 168.2,9.5 163.5,8 168.2,6.5" fill="#c9a84c" />
+                          <polygon points="158,3 159.1,5.6 161.8,6.5 159.1,7.4 158,10 156.9,7.4 154.2,6.5 156.9,5.6" fill="#7e5265" />
+                          <polygon points="171,15 172,17.2 174.2,18 172,18.8 171,21 170,18.8 167.8,18 170,17.2" fill="#4a6b82" />
+                        </svg>
+
+                        <div className="ticket-masthead">
+                          <img
+                            src="/phone_lady_whistledown.png"
+                            alt=""
+                            className="ticket-masthead-logo"
+                          />
+                          <div className="ticket-masthead-title">Lady Whistledown’s</div>
+                          <div className="ticket-masthead-sub">SOCIETY PAPERS</div>
+                          <div className="ticket-masthead-rule">
+                            EXTRAORDINARY PEOPLE. EXTRAORDINARY NEWS.
+                          </div>
+                        </div>
+
+                        <div className="ticket-header">
+                          <h2 className="ticket-heading">Dearest Gentle Reader,</h2>
+                          <p className="ticket-subtext">
+                            you have this author’s warmest gratitude for attending
+                          </p>
+                        </div>
+
+                        <div className="ticket-qr-center">
+                          {participant.qrCode && (
+                            <div className="ticket-qr-frame">
+                              <img src={participant.qrCode} alt="" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="ticket-guest-name-box">
+                          <span className="ticket-name-star">✦</span>
+                          <span className="print-ticket-name">{participant.name}</span>
+                          <span className="ticket-name-star">✦</span>
+                        </div>
+
+                        <svg className="ticket-corner-stars ticket-corner-stars-bottom" viewBox="0 0 180 22" aria-hidden="true">
+                          {/* Bottom corner colored stars */}
+                          <polygon points="10,8 11.8,12.5 16.5,14 11.8,15.5 10,20 8.2,15.5 3.5,14 8.2,12.5" fill="#c9a84c" />
+                          <polygon points="22,12 23.1,14.6 25.8,15.5 23.1,16.4 22,19 20.9,16.4 18.2,15.5 20.9,14.6" fill="#7e5265" />
+                          <polygon points="9,1 10,3.2 12.2,4 10,4.8 9,7 8,4.8 5.8,4 8,3.2" fill="#4a6b82" />
+                          <polygon points="170,8 171.8,12.5 176.5,14 171.8,15.5 170,20 168.2,15.5 163.5,14 168.2,12.5" fill="#c9a84c" />
+                          <polygon points="158,12 159.1,14.6 161.8,15.5 159.1,16.4 158,19 156.9,16.4 154.2,15.5 156.9,14.6" fill="#7e5265" />
+                          <polygon points="171,1 172,3.2 174.2,4 172,4.8 171,7 170,4.8 167.8,4 170,3.2" fill="#4a6b82" />
+                        </svg>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ))}
+          </section>
         </main>
       </div>
     </div>

@@ -332,7 +332,7 @@ apiRouter.post('/events/select-winner', asyncRoute(async (req, res) => {
 
   const { participant } = result;
   const label = prizeCategory === 'MAJOR' ? 'Major Prize' : 'Minor Prize';
-  const message = `${label} · Darling, you are the Diamond of the Season! 💎`;
+  const message = `${label} · Dearest, you are the Diamond of the Season! 💎`;
   const announcement = {
     participantId: participant.id,
     participantName: participant.name,
