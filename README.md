@@ -1,6 +1,90 @@
 # The Ton's Claw — IT Setup & Operations Manual
 
-The Ton's Claw is a Regency-themed raffle and claw-machine web application built to run locally on a Windows PC using Node.js and SQLite (no external database server, Nginx, PM2, or VPS required).
+The Ton's Claw is a Regency-themed raffle and claw-machine web application built to run locally on Windows or Linux using Node.js and SQLite (no external database server, Nginx, PM2, or VPS required).
+
+## Ubuntu / Linux Quick Start
+
+These instructions are for Ubuntu and other Linux distributions with Bash. In WSL, use the Ubuntu terminal and Linux-installed Node.js/npm for every command; do not install dependencies with Windows npm and then run the app with Linux Node.js.
+
+### 1. Install Node.js 20
+
+Install Node.js 20 LTS and npm. On Ubuntu, one option is `nvm`:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+node --version
+npm --version
+```
+
+`node --version` should report `v20.x`. If the project is on your Windows drive in WSL, you can enter it with:
+
+```bash
+cd "/mnt/c/Users/<Windows-username>/Desktop/Claw Machine"
+```
+
+For best performance in WSL, keep the project under your Linux home directory (for example, `~/projects/Claw-Machine`) rather than `/mnt/c`.
+
+### 2. Install dependencies and configure the backend
+
+From the project root:
+
+```bash
+npm install --include=optional
+cp backend/.env.example backend/.env
+openssl rand -hex 32
+nano backend/.env
+```
+
+Set `HOST_PIN` to a private host PIN and replace `SESSION_SECRET` with the random value printed by `openssl`. The secret must be at least 32 characters. Keep `DATABASE_URL="file:./dev.db"` and `PORT=3001`; `PUBLIC_BASE_URL` can be left blank for local Wi-Fi address detection.
+
+### 3. Generate Prisma Client, initialize the database, and run
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+npm run dev
+```
+
+The migration command applies any database migrations that have not yet been applied (and creates the local SQLite database on a fresh setup). After both servers start, open **http://localhost:8080**. The backend API runs at **http://localhost:3001**. Stop the app with **Ctrl+C**.
+
+For production mode:
+
+```bash
+npm run build
+npm start
+```
+
+Then open **http://localhost:3001**.
+
+### Phones and other devices
+
+On native Linux, allow inbound TCP port `8080` through the host firewall for development, or port `3001` for production, and use the Linux machine's Wi-Fi IP address. For example, with UFW:
+
+```bash
+sudo ufw allow 8080/tcp
+```
+
+For guests outside the local network, use Cloudflare Tunnel as described in [Public Internet Access via Cloudflare Tunnel](#mode-2-public-internet-access-via-cloudflare-tunnel-recommended-for-events), targeting port `8080` in development or `3001` in production.
+
+In WSL, opening `localhost` on the same PC should work, but phones may not be able to reach the WSL app directly. Use a tunnel or configure WSL/Windows networking and firewall rules for phone access.
+
+### Linux / WSL troubleshooting
+
+- **`Cannot find module @rollup/rollup-linux-x64-gnu`**: dependencies were installed for another operating system or the Linux optional package is missing. Stop the app, remove only `node_modules`, then reinstall from the Linux terminal:
+  ```bash
+  rm -rf node_modules
+  npm install --include=optional
+  ```
+  Do not delete `package-lock.json`.
+- **`@prisma/client did not initialize yet`**: stop the app and generate the Linux Prisma Client, then restart:
+  ```bash
+  npm run prisma:generate
+  npm run dev
+  ```
+  Run `npm run prisma:migrate` only for a fresh database or when applying new migrations; migrating is not required just to generate Prisma Client.
 
 ---
 
