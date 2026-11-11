@@ -179,5 +179,6 @@ npm.cmd run build
 | `SESSION_SECRET must contain at least 32 characters` | Missing or short `SESSION_SECRET` | Check `backend\.env` and ensure `SESSION_SECRET` has 32+ characters |
 | Red local-address warning / Print disabled | App detected `127.0.0.1` or `localhost` | Connect to Wi-Fi and click **Use my Wi-Fi address**, or paste a `cloudflared` URL |
 | Phones can't open the Wi-Fi QR link | Windows Firewall or AP client isolation | Allow `node.exe` / port `8080` in Windows Firewall, or use Cloudflare Tunnel mode |
+| Phone shows `ERR_NAME_NOT_RESOLVED` for a `trycloudflare.com` link | The quick tunnel is no longer running, or its temporary URL changed | Restart `cloudflared tunnel --url http://localhost:8080` (or `3001` in production), then save the newly printed URL under **Public address**. Keep the tunnel terminal open. For same-Wi-Fi access, click **Use my Wi-Fi address** instead. |
 | Cloudflare tunnel shows Apache 404 or connection error | Tunnel aimed at wrong port or port 80 | Stop tunnel (`Ctrl+C`) and run `cloudflared tunnel --url http://localhost:8080` (for `dev`) or `3001` (for `start`) |
 | `401` or "session expired" on `/claw` | Host not signed in on browser | Sign in at `http://localhost:8080` first, then open `/claw` |

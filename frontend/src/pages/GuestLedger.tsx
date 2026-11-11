@@ -9,12 +9,16 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
   const [hostState, setHostState] = useState<HostPayload | null>(null);
   const [name, setName] = useState('');
   const [role, setRole] = useState<'EMPLOYEE' | 'INTERN'>('EMPLOYEE');
-  const [arrived, setArrived] = useState(false);
+  const [selectedGuestIds, setSelectedGuestIds] = useState<string[]>([]);
+  const [isDeletingGuests, setIsDeletingGuests] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const refreshHost = useCallback(async () => {
     const payload = await apiRequest<HostPayload>('/api/event');
     setHostState(payload);
+    setSelectedGuestIds((current) => current.filter(
+      (id) => payload.participants.some((participant) => participant.id === id),
+    ));
   }, []);
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
       await apiRequest('/api/participants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, role, arrived }),
+        body: JSON.stringify({ name, role }),
       });
       setName('');
       setFormError(null);
@@ -56,6 +60,30 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
       await refreshHost();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Unable to mark guest as arrived.');
+    }
+  };
+
+  const toggleGuestSelection = (participantId: string) => {
+    setSelectedGuestIds((current) => current.includes(participantId)
+      ? current.filter((id) => id !== participantId)
+      : [...current, participantId]);
+  };
+
+  const deleteSelectedGuests = async () => {
+    setIsDeletingGuests(true);
+    try {
+      await apiRequest('/api/participants', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedGuestIds }),
+      });
+      setSelectedGuestIds([]);
+      setFormError(null);
+      await refreshHost();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Unable to delete the selected guests.');
+    } finally {
+      setIsDeletingGuests(false);
     }
   };
 
@@ -106,14 +134,14 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
                 <span>Intern / Guest</span>
               </label>
             </div>
-            <label className={`role-check-item ${arrived ? 'checked' : ''}`}>
-              <input
-                type="checkbox"
-                checked={arrived}
-                onChange={(event) => setArrived(event.target.checked)}
-              />
-              <span>Already arrived (add directly to claw)</span>
-            </label>
+            <button
+              type="button"
+              className="secondary-button delete-guests-button"
+              onClick={() => void deleteSelectedGuests()}
+              disabled={selectedGuestIds.length === 0 || isDeletingGuests}
+            >
+              Delete Guests
+            </button>
             <button type="submit" className="primary-button">Add to the Ball</button>
           </form>
 
@@ -158,7 +186,28 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
                 {inactiveNames.length === 0 ? (
                   <p className="empty-state">No guests have arrived yet. The ballroom awaits.</p>
                 ) : inactiveNames.map((participant) => (
-                  <article key={participant.id} className="guest-card-item inactive">
+                  <article
+                    key={participant.id}
+                    className={`guest-card-item inactive ${selectedGuestIds.includes(participant.id) ? 'selected' : ''}`}
+                    role="checkbox"
+                    aria-label={`Select ${participant.name}`}
+                    aria-checked={selectedGuestIds.includes(participant.id)}
+                    aria-disabled={isDeletingGuests}
+                    tabIndex={0}
+                    onClick={() => {
+                      if (!isDeletingGuests) toggleGuestSelection(participant.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        !isDeletingGuests &&
+                        event.target === event.currentTarget &&
+                        (event.key === 'Enter' || event.key === ' ')
+                      ) {
+                        event.preventDefault();
+                        toggleGuestSelection(participant.id);
+                      }
+                    }}
+                  >
                     <div className="mini-seal" />
                     <div className="guest-card-details">
                       <h4>{participant.name}</h4>
@@ -167,13 +216,18 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
                         <button
                           type="button"
                           className="secondary-button compact-button"
-                          onClick={() => void markGuestArrived(participant.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void markGuestArrived(participant.id);
+                          }}
                         >
                           Mark arrived
                         </button>
                       </div>
                     </div>
-                    <GuestQrCard participant={participant} disabled={isLocalAddress} />
+                    <div onClick={(event) => event.stopPropagation()}>
+                      <GuestQrCard participant={participant} disabled={isLocalAddress} />
+                    </div>
                   </article>
                 ))}
               </div>
@@ -187,12 +241,42 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
                 ) : arrivedNames.map((participant) => {
                   const isChosen = participant.status === 'WON' || participant.hasWon;
                   const roleLabel = participant.role === 'EMPLOYEE' ? 'Employee' : 'Intern / Guest';
+                  const activatedAt = participant.activatedAt ? new Date(participant.activatedAt) : null;
                   return (
-                    <article key={participant.id} className="guest-card-item active">
+                    <article
+                      key={participant.id}
+                      className={`guest-card-item active ${selectedGuestIds.includes(participant.id) ? 'selected' : ''}`}
+                      role="checkbox"
+                      aria-label={`Select ${participant.name}`}
+                      aria-checked={selectedGuestIds.includes(participant.id)}
+                      aria-disabled={isDeletingGuests}
+                      tabIndex={0}
+                      onClick={() => {
+                        if (!isDeletingGuests) toggleGuestSelection(participant.id);
+                      }}
+                      onKeyDown={(event) => {
+                        if (
+                          !isDeletingGuests &&
+                          event.target === event.currentTarget &&
+                          (event.key === 'Enter' || event.key === ' ')
+                        ) {
+                          event.preventDefault();
+                          toggleGuestSelection(participant.id);
+                        }
+                      }}
+                    >
                       <div className="mini-seal" />
                       <div className="guest-card-details">
                         <h4>{participant.name}</h4>
                         <small>{isChosen ? `Arrived · ${roleLabel} · Chosen` : `Arrived · ${roleLabel}`}</small>
+                        {activatedAt && !Number.isNaN(activatedAt.getTime()) && (
+                          <small className="guest-arrival-time">
+                            Arrived at{' '}
+                            <time dateTime={activatedAt.toISOString()}>
+                              {activatedAt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                            </time>
+                          </small>
+                        )}
                       </div>
                       <span className="chip">{isChosen ? 'Chosen' : 'Ready'}</span>
                     </article>

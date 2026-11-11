@@ -9,7 +9,7 @@ import { ensureEvent, getEventPayload } from './events.js';
 import { pickWinner } from './pick.js';
 import { prepareParticipant } from './qr.js';
 import { broadcastState, handleEventStream } from './sse.js';
-import { addGossip, setLatestWinner } from './state.js';
+import { addGossip, getLatestWinner, setLatestWinner } from './state.js';
 
 const participantSchema = z.object({
   name: z.string().trim().min(1),
@@ -17,6 +17,9 @@ const participantSchema = z.object({
   arrived: z.boolean().optional().default(false),
 });
 const participantRoleSchema = z.object({ role: z.enum(['EMPLOYEE', 'INTERN']) });
+const deleteParticipantsSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).refine((ids) => new Set(ids).size === ids.length),
+});
 const prizeSchema = z.object({
   name: z.string().trim().min(1).max(80),
   category: z.enum(['MINOR', 'MAJOR']),
@@ -239,6 +242,29 @@ apiRouter.post('/participants', asyncRoute(async (req, res) => {
     ...combined,
     message: isArrived ? `${cleanName} has arrived and joined the ball.` : `Invitation prepared for ${cleanName}.`,
   });
+}));
+
+apiRouter.delete('/participants', asyncRoute(async (req, res) => {
+  const parsed = deleteParticipantsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: 'Select at least one valid guest to remove.' });
+    return;
+  }
+
+  const event = await ensureEvent();
+  const deleted = await prisma.participant.deleteMany({
+    where: { eventId: event.id, id: { in: parsed.data.ids } },
+  });
+  if (deleted.count === 0) {
+    res.status(404).json({ message: 'Those guests could not be found.' });
+    return;
+  }
+
+  if (parsed.data.ids.includes(getLatestWinner()?.participantId ?? '')) {
+    setLatestWinner(null);
+  }
+  broadcastState(await getEventPayload());
+  res.json({ ok: true, deletedCount: deleted.count });
 }));
 
 apiRouter.post('/participants/:id/arrive', asyncRoute(async (req, res) => {
