@@ -13,6 +13,7 @@ const clawPage = path.join(config.workspaceRoot, 'frontend', 'public', 'claw.htm
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
+const upgradeInsecureRequests = process.env.ALLOW_INSECURE_HTTP === 'true' ? null : [];
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -21,6 +22,7 @@ app.use(helmet({
       imgSrc: ["'self'", 'data:'],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      upgradeInsecureRequests,
     },
   },
 }));
@@ -37,6 +39,7 @@ const clawPageSecurity = helmet({
       imgSrc: ["'self'", 'data:'],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      upgradeInsecureRequests,
     },
   },
 });
