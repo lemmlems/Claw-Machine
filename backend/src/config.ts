@@ -35,7 +35,7 @@ export function validateConfig() {
     throw new Error('FRONTEND_PORT must be a valid TCP port.');
   }
   if (!config.hostPin) {
-    throw new Error('HOST_PIN is required. Copy backend/.env.example to backend/.env and set the host PIN.');
+    throw new Error('HOST_PIN is required. Set it in the server environment.');
   }
   if (config.sessionSecret.length < 32) {
     throw new Error('SESSION_SECRET must contain at least 32 characters.');

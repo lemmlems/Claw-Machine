@@ -61,15 +61,15 @@ Then open **http://localhost:3001**.
 
 ### Phones and other devices
 
-On native Linux, allow inbound TCP port `8080` through the host firewall for development, or port `3001` for production, and use the Linux machine's Wi-Fi IP address. For example, with UFW:
+On native Linux, allow inbound TCP port `8080` through the host firewall for development and use the Linux machine's Wi-Fi IP address. For example, with UFW:
 
 ```bash
 sudo ufw allow 8080/tcp
 ```
 
-For guests outside the local network, use Cloudflare Tunnel as described in [Public Internet Access via Cloudflare Tunnel](#mode-2-public-internet-access-via-cloudflare-tunnel-recommended-for-events), targeting port `8080` in development or `3001` in production.
+For internet-facing EC2 deployment, configure a domain and reverse proxy as described in [DEPLOY.md](./DEPLOY.md).
 
-In WSL, opening `localhost` on the same PC should work, but phones may not be able to reach the WSL app directly. Use a tunnel or configure WSL/Windows networking and firewall rules for phone access.
+In WSL, opening `localhost` on the same PC should work, but phones may not be able to reach the WSL app directly. Configure WSL/Windows networking and firewall rules for local phone access, or use the EC2 deployment described in [DEPLOY.md](./DEPLOY.md) for internet access.
 
 ### Linux / WSL troubleshooting
 
@@ -102,11 +102,6 @@ In WSL, opening `localhost` on the same PC should work, but phones may not be ab
 
 1. **Node.js 20 LTS** (includes `npm`)
 2. **Git for Windows** (if pulling updates from GitHub)
-3. *(Optional for Public Tunnel Mode)* **Cloudflare Tunnel (`cloudflared`)** — needed when phones scanning QR codes are on mobile data or a separate Wi-Fi network from the host PC:
-   ```powershell
-   winget install --id Cloudflare.cloudflared -e
-   ```
-
 > **Windows PowerShell Note:** If PowerShell blocks `npm` with an execution policy error (`running scripts is disabled on this system`), use `npm.cmd` instead of `npm` (for example, `npm.cmd install`, `npm.cmd run dev`, `npm.cmd run build`).
 
 ---
@@ -137,7 +132,7 @@ SESSION_SECRET=replace-with-a-random-string-of-at-least-32-characters
 ```
 - **`HOST_PIN`**: PIN required for hosts to sign into the Guest Ledger and control The Promenade Claw.
 - **`SESSION_SECRET`**: Must be **at least 32 characters** long (the backend will refuse to start if shorter).
-- **`PUBLIC_BASE_URL`**: Leave blank for automatic local Wi-Fi IP detection, or set to a fixed origin if desired (no trailing slash or path).
+- **`PUBLIC_BASE_URL`**: Leave blank for automatic local Wi-Fi IP detection, or set to a fixed origin (no trailing slash or path).
 
 ### Step 3: Initialize Prisma & SQLite database
 ```powershell
@@ -150,7 +145,7 @@ This creates `backend\prisma\dev.db` and applies all schema migrations.
 
 ## 4. Booting Up the System
 
-### Option A: Development / Event Mode (Recommended with Cloudflare Tunnel)
+### Option A: Development / Event Mode
 Starts both the backend API (`:3001`) and the Vite frontend server (`:8080`):
 ```powershell
 npm.cmd run dev
@@ -167,7 +162,7 @@ Builds both workspaces and serves the frontend directly from the backend on port
 npm.cmd run build
 npm.cmd start
 ```
-In production mode, open `http://localhost:3001` (and point any tunnel or firewall rule to port **`3001`** instead of `8080`).
+In production mode, the app listens on port `3001`. For an EC2 deployment with a domain and HTTPS, follow [DEPLOY.md](./DEPLOY.md).
 
 ---
 
@@ -182,26 +177,10 @@ Guests scan QR codes from the **Guest Ledger** to mark themselves as arrived on 
    $node = (Get-Command node).Source
    New-NetFirewallRule -DisplayName "The Ton's Claw" -Direction Inbound -Program $node -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private
    ```
-   *(If running in Production Mode via `npm.cmd start`, also allow port `3001`.)*
+   *(For a locally hosted production-mode app, allow port `3001` only on the trusted private network.)*
 3. In the **Guest Ledger**, verify **Public address** shows your PC's Wi-Fi IP (`http://192.168.x.x:8080`). If not, click **Use my Wi-Fi address**.
 
-### Mode 2: Public Internet Access via Cloudflare Tunnel (Recommended for Events)
-Use this when guests are on cellular data (`4G/5G`) or guest Wi-Fi:
-1. Keep the app running in Terminal 1 (`npm.cmd run dev` on port `8080`, or `npm.cmd start` on port `3001`).
-2. Open a **second PowerShell window** and start the tunnel targeting the active web port:
-   - If running `npm.cmd run dev`:
-     ```powershell
-     cloudflared tunnel --url http://localhost:8080
-     ```
-   - If running `npm.cmd start` (production):
-     ```powershell
-     cloudflared tunnel --url http://localhost:3001
-     ```
-3. Copy the printed HTTPS tunnel URL (for example, `https://example-words.trycloudflare.com`).
-4. On the host dashboard (`http://localhost:8080`), paste that URL into **Public address → Invitation address** and click **Save address**.
-5. Existing QR codes regenerate automatically to point to the public URL without invalidating guest tokens.
-
-> **Important:** Do not close either PowerShell window and disable PC sleep/hibernation during the event. If `cloudflared` restarts and prints a new `trycloudflare.com` URL, paste the new URL into **Save address** and reprint/reshow any pending QR codes.
+Guests on mobile data or guest Wi-Fi need a public HTTPS domain. For EC2 hosting, configure the domain and reverse proxy using [DEPLOY.md](./DEPLOY.md), then set **Public address → Invitation address** to the public origin. Existing QR codes will use the saved public address.
 
 ---
 
@@ -261,8 +240,6 @@ npm.cmd run build
 | :--- | :--- | :--- |
 | `npm` blocked by PowerShell execution policy | Restricted `.ps1` script policy | Run `npm.cmd` instead of `npm` (e.g. `npm.cmd run dev`) |
 | `SESSION_SECRET must contain at least 32 characters` | Missing or short `SESSION_SECRET` | Check `backend\.env` and ensure `SESSION_SECRET` has 32+ characters |
-| Red local-address warning / Print disabled | App detected `127.0.0.1` or `localhost` | Connect to Wi-Fi and click **Use my Wi-Fi address**, or paste a `cloudflared` URL |
-| Phones can't open the Wi-Fi QR link | Windows Firewall or AP client isolation | Allow `node.exe` / port `8080` in Windows Firewall, or use Cloudflare Tunnel mode |
-| Phone shows `ERR_NAME_NOT_RESOLVED` for a `trycloudflare.com` link | The quick tunnel is no longer running, or its temporary URL changed | Restart `cloudflared tunnel --url http://localhost:8080` (or `3001` in production), then save the newly printed URL under **Public address**. Keep the tunnel terminal open. For same-Wi-Fi access, click **Use my Wi-Fi address** instead. |
-| Cloudflare tunnel shows Apache 404 or connection error | Tunnel aimed at wrong port or port 80 | Stop tunnel (`Ctrl+C`) and run `cloudflared tunnel --url http://localhost:8080` (for `dev`) or `3001` (for `start`) |
+| Red local-address warning / Print disabled | App detected `127.0.0.1` or `localhost` | Connect to Wi-Fi and click **Use my Wi-Fi address**, or set a public HTTPS address |
+| Guests cannot open an invitation link | DNS, reverse proxy, firewall, or saved public address is incorrect | Check the domain and proxy setup in [DEPLOY.md](./DEPLOY.md), and verify **Public address → Invitation address** |
 | `401` or "session expired" on `/claw` | Host not signed in on browser | Sign in at `http://localhost:8080` first, then open `/claw` |

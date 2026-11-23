@@ -47,7 +47,7 @@ export function PublicAddressSettings({
         {publicAddress.mode === 'wifi'
           ? 'Wi-Fi mode: guests must be on the same Wi-Fi'
           : publicAddress.mode === 'public'
-            ? 'Public tunnel mode: guests can join from anywhere'
+            ? 'Public address mode: guests can join from anywhere'
             : 'Local address warning: this address only works on this PC'}
       </p>
       {publicAddress.isLocal && (
@@ -62,7 +62,7 @@ export function PublicAddressSettings({
           type="url"
           value={addressDraft}
           onChange={(event) => setAddressDraft(event.target.value)}
-          placeholder="https://xxxx.trycloudflare.com"
+          placeholder="https://your-domain.example"
           required
         />
         <div className="address-actions">
