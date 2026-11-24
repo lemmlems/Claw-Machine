@@ -5,6 +5,7 @@ import { ActivationPage } from './pages/ActivationPage';
 import { ClawPage } from './pages/ClawPage';
 import { GuestLedger } from './pages/GuestLedger';
 import { LoginPage } from './pages/LoginPage';
+import { RsvpPage } from './pages/RsvpPage';
 
 type SessionPayload = { authenticated: boolean };
 
@@ -61,6 +62,7 @@ function AppContent() {
   }
 
   if (window.location.pathname === '/claw') return <ClawPage />;
+  if (window.location.pathname === '/rsvp') return <RsvpPage onLogout={() => void logout()} />;
   return <GuestLedger onLogout={() => void logout()} />;
 }
 
