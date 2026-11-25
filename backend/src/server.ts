@@ -68,9 +68,21 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   }
 });
 
+async function ensureQrAccessColumns() {
+  const columns = await prisma.$queryRawUnsafe<Array<{ name: string }>>('PRAGMA table_info("Event")');
+  const names = new Set(columns.map((column) => column.name));
+  if (!names.has('qrOpenAt')) {
+    await prisma.$executeRawUnsafe('ALTER TABLE "Event" ADD COLUMN "qrOpenAt" DATETIME');
+  }
+  if (!names.has('qrClosed')) {
+    await prisma.$executeRawUnsafe('ALTER TABLE "Event" ADD COLUMN "qrClosed" BOOLEAN NOT NULL DEFAULT false');
+  }
+}
+
 async function start() {
   validateConfig();
   await prisma.$connect();
+  await ensureQrAccessColumns();
   app.listen(config.port, '0.0.0.0', () => {
     console.log(`The Ton's Claw API is running on http://localhost:${config.port}`);
     console.log(`Phones on the same Wi-Fi can open: ${config.wifiBaseUrl}`);

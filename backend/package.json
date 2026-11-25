@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -b tsconfig.json",
+    "build": "prisma generate && tsc -b tsconfig.json",
     "start": "cross-env NODE_ENV=production node dist/server.js",
     "typecheck": "tsc -b tsconfig.json --pretty false",
     "prisma:generate": "prisma generate",
