@@ -8,12 +8,17 @@ class SelectionConflictError extends Error {}
 export async function pickWinner(
   removeWinner = false,
   prizeCategory: 'MINOR' | 'MAJOR' = 'MINOR',
+  minorInternsOnly = false,
 ): Promise<{
   participant: Participant;
   prize: { id: string; name: string; category: string } | null;
 } | null> {
   const event = await ensureEvent();
-  const roleFilter = prizeCategory === 'MAJOR' ? { role: 'EMPLOYEE' } : {};
+  const roleFilter = prizeCategory === 'MAJOR'
+    ? { role: 'EMPLOYEE' }
+    : minorInternsOnly
+      ? { role: 'INTERN' }
+      : {};
 
   let active = await prisma.participant.findMany({
     where: { eventId: event.id, status: 'ACTIVE', ...roleFilter },

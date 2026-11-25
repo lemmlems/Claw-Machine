@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { apiRequest } from './api';
 import { ThemeProvider } from './theme';
 import { ActivationPage } from './pages/ActivationPage';
+import { ClawAdminPage } from './pages/ClawAdminPage';
 import { ClawPage } from './pages/ClawPage';
 import { GuestLedger } from './pages/GuestLedger';
 import { LoginPage } from './pages/LoginPage';
-import { RsvpPage } from './pages/RsvpPage';
 
 type SessionPayload = { authenticated: boolean };
 
@@ -61,8 +61,8 @@ function AppContent() {
     );
   }
 
+  if (window.location.pathname === '/claw-admin') return <ClawAdminPage onLogout={() => void logout()} />;
   if (window.location.pathname === '/claw') return <ClawPage />;
-  if (window.location.pathname === '/rsvp') return <RsvpPage onLogout={() => void logout()} />;
   return <GuestLedger onLogout={() => void logout()} />;
 }
 

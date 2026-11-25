@@ -2,6 +2,7 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '../api';
 import { GuestQrCard } from '../components/GuestQrCard';
 import { PageHeader } from '../components/PageHeader';
+import { QrAccessSettings } from '../components/QrAccessSettings';
 import type { HostPayload } from '../types';
 
 export function GuestLedger({ onLogout }: { onLogout: () => void }) {
@@ -155,6 +156,12 @@ export function GuestLedger({ onLogout }: { onLogout: () => void }) {
             <div className="stat-box"><span>Arrived</span><strong>{arrivedNames.length}</strong></div>
             <div className="stat-box"><span>Chosen</span><strong>{wonNames.length}</strong></div>
           </div>
+
+          <QrAccessSettings
+            qrAccess={hostState.qrAccess}
+            refreshHost={refreshHost}
+            onError={setFormError}
+          />
         </aside>
 
         <main className="panel main-panel">

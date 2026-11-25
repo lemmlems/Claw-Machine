@@ -16,6 +16,8 @@ model Event {
   hostPinHash           String?
   removeWinnerAfterPick Boolean       @default(true)
   currentRound          Int           @default(1)
+  qrOpenAt              DateTime?
+  qrClosed              Boolean       @default(false)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   participants          Participant[]

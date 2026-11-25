@@ -973,13 +973,9 @@
         <p class="eyebrow">Regency Drawing Room</p>
         <h1>The Promenade Claw</h1>
       </div>
-      <nav class="page-nav" aria-label="Host pages">
-        <a href="/">Guest Ledger</a>
-        <a href="/rsvp">RSVP</a>
-        <a href="/claw" class="active">The Promenade Claw</a>
+      <nav class="page-nav" aria-label="Display controls">
         <button id="soundButton" class="nav-button" type="button" aria-label="Unmute sounds">♫ Sound off</button>
         <button id="themeButton" class="theme-toggle" type="button" aria-label="Switch to dark theme">☾ Dark</button>
-        <button id="signOutButton" class="nav-button" type="button">Sign out</button>
       </nav>
     </header>
 
@@ -994,50 +990,10 @@
           <h2>Society Ledger</h2>
         </div>
 
-        <label class="field-label" for="namesInput">Dance card · one name per line</label>
-        <label class="toggle-row"><input id="hideNamesToggle" type="checkbox" checked> Conceal guest names</label>
-        <div id="maskedNames" class="masked-names" aria-label="Guest names concealed"></div>
-        <textarea id="namesInput" aria-label="Names in the sample dance card" spellcheck="false"></textarea>
+        <label class="field-label" for="namesInput">Dance card · guests in vitrine</label>
+        <textarea id="namesInput" aria-label="Society Ledger guest names" spellcheck="false" readonly></textarea>
 
         <div class="counter-pill" id="nameCounter" aria-live="polite">0 names</div>
-
-        <div class="manual-add-box" id="manualAddBox">
-          <label class="field-label" for="manualGuestInput">Add guest manually</label>
-          <div class="inline-add">
-            <input id="manualGuestInput" class="text-input interactive-control" placeholder="Guest name">
-            <button id="manualGuestAddButton" class="primary-button interactive-control" type="button">Add</button>
-          </div>
-          <div class="manual-role-row" role="group" aria-label="Manual guest role">
-            <label class="role-pill checked" id="manualRoleEmployeeLabel">
-              <input id="manualRoleEmployee" class="interactive-control" type="radio" name="manualGuestRole" value="EMPLOYEE" checked>
-              <span>Employee</span>
-            </label>
-            <label class="role-pill" id="manualRoleInternLabel">
-              <input id="manualRoleIntern" class="interactive-control" type="radio" name="manualGuestRole" value="INTERN">
-              <span>Intern / Guest</span>
-            </label>
-          </div>
-        </div>
-
-        <div id="ledgerExtraControls" hidden style="display: none;">
-          <div class="inline-add">
-            <label class="sr-only" for="addNameInput">Add a guest</label>
-            <input id="addNameInput" class="text-input" placeholder="Name Here">
-            <button id="addNameButton" class="primary-button" type="button">Add</button>
-          </div>
-
-          <div class="button-row">
-            <button id="reshuffleButton" class="secondary-button" type="button">Reshuffle</button>
-            <button id="resetButton" class="secondary-button" type="button">Reset</button>
-          </div>
-
-          <label class="toggle-row"><input id="removeWinnerToggle" type="checkbox" checked> Remove winner after draw</label>
-
-          <div class="button-row">
-            <button id="liveModeButton" class="secondary-button" type="button">Use arrived guests</button>
-            <button id="sampleModeButton" class="secondary-button" type="button" hidden>Use sample names</button>
-          </div>
-        </div>
 
         <p id="ledgerStatus" class="form-error" role="status" hidden></p>
       </aside>
@@ -1053,14 +1009,6 @@
         </div>
 
         <div class="controls-bar" aria-label="Claw machine controls">
-          <div class="prize-mode-bar" role="group" aria-label="Prize category selection">
-            <button id="minorPrizeButton" class="prize-mode-button active interactive-control" type="button">
-              Minor Prizes
-            </button>
-            <button id="majorPrizeButton" class="prize-mode-button interactive-control" type="button">
-              Major Prizes
-            </button>
-          </div>
           <button id="leverButton" class="select-button lever-button interactive-control" type="button">
             Select the Diamond
           </button>
@@ -1143,6 +1091,7 @@
       let history = [];
       let liveMode = false;
       let prizeMode = "MINOR";
+      let minorInternsOnly = false;
       let fullSampleNames = sampleNames.slice();
       let latestLiveParticipants = [];
       let queuedLivePayload = null;
@@ -1158,7 +1107,6 @@
       let audioContext = null;
       let soundEnabled = false;
       let removeWinner = true;
-      let hideNames = true;
       let pickOrder = 0;
       let winnerBall = null;
       let winnerResult = null;
@@ -1166,6 +1114,27 @@
       let nextId = 0;
       let cutsceneTimers = [];
       let activeCutsceneResolver = null;
+
+      function isRoleEligible(role, mode = prizeMode, internsOnly = minorInternsOnly) {
+        const normalized = String(role || "EMPLOYEE").toUpperCase();
+        if (mode === "MAJOR") return normalized === "EMPLOYEE";
+        if (internsOnly) return normalized === "INTERN";
+        return true;
+      }
+
+      function getModeBadgeText(mode = prizeMode, internsOnly = minorInternsOnly) {
+        if (!liveMode) return "Sample Dance Card";
+        if (mode === "MAJOR") return "Major Prizes · Employees Only";
+        if (internsOnly) return "Minor Prizes · Interns & Guests Only";
+        return "Minor Prizes · All Guests";
+      }
+
+      function getCountLabel(count, mode = prizeMode, internsOnly = minorInternsOnly) {
+        if (!liveMode) return `${count} name${count === 1 ? "" : "s"}`;
+        if (mode === "MAJOR") return `${count} employee${count === 1 ? "" : "s"}`;
+        if (internsOnly) return `${count} intern / guest${count === 1 ? "" : "s"}`;
+        return `${count} arrived guest${count === 1 ? "" : "s"}`;
+      }
 
       function setLedgerError(msg) {
         if (!msg) {
@@ -1186,7 +1155,6 @@
               names: sampleNames.slice(),
               history: [],
               removeWinner: true,
-              hideNames: true,
               theme: storedTheme
             };
           }
@@ -1199,11 +1167,10 @@
             names: hasSavedNames ? savedNames : sampleNames.slice(),
             history: Array.isArray(saved.history) ? saved.history.filter((item) => item && typeof item === "object").slice(0, 100) : [],
             removeWinner: saved.removeWinner !== false,
-            hideNames: saved.hideNamesDefaultedV2 === true ? saved.hideNames !== false : true,
             theme: storedTheme
           };
         } catch (_error) {
-          return { names: sampleNames.slice(), history: [], removeWinner: true, hideNames: true, theme: "light" };
+          return { names: sampleNames.slice(), history: [], removeWinner: true, theme: "light" };
         }
       }
 
@@ -1212,12 +1179,8 @@
       history = savedState.history;
       pickOrder = history.length;
       removeWinner = savedState.removeWinner;
-      hideNames = savedState.hideNames;
-      element("removeWinnerToggle").checked = removeWinner;
-      element("hideNamesToggle").checked = hideNames;
       namesInput.value = savedState.names.join("\n");
-      namesInput.hidden = hideNames;
-      element("maskedNames").hidden = !hideNames;
+      namesInput.readOnly = false;
 
       function saveState() {
         try {
@@ -1225,8 +1188,6 @@
             names: liveMode ? savedState.names : readNames(),
             history,
             removeWinner,
-            hideNames,
-            hideNamesDefaultedV2: true,
             theme: document.documentElement.dataset.theme
           }));
           localStorage.setItem(themeStorageKey, document.documentElement.dataset.theme);
@@ -1252,46 +1213,12 @@
         return value % length;
       }
 
-      function shuffleNames() {
-        if (balls.length > 0) {
-          void shuffleBallsInVitrine();
-          return;
-        }
-        const names = readNames();
-        for (let index = names.length - 1; index > 0; index -= 1) {
-          const swapIndex = secureIndex(index + 1);
-          [names[index], names[swapIndex]] = [names[swapIndex], names[index]];
-        }
-        namesInput.value = names.join("\n");
-        updateLedger();
-        saveState();
-      }
-
       function updateLedger() {
         const names = readNames();
-        element("nameCounter").textContent = `${names.length} name${names.length === 1 ? "" : "s"}`;
-        renderMaskedNames(names.length);
+        element("nameCounter").textContent = getCountLabel(names.length);
         if (!liveMode) {
           savedState.names = names;
           resetBalls(names);
-        }
-      }
-
-      function renderMaskedNames(count) {
-        const list = element("maskedNames");
-        list.replaceChildren();
-        if (count === 0) {
-          const row = document.createElement("div");
-          row.className = "masked-name-row";
-          row.textContent = "No guests in ledger";
-          list.appendChild(row);
-          return;
-        }
-        for (let index = 0; index < count; index += 1) {
-          const row = document.createElement("div");
-          row.className = "masked-name-row";
-          row.textContent = "✦ ••••••••";
-          list.appendChild(row);
         }
       }
 
@@ -1370,7 +1297,7 @@
         balls.splice(0, balls.length);
         names.forEach((name, idx) => {
           const role = getSampleRole(name, idx);
-          if (!includeAllRoles && prizeMode === "MAJOR" && role === "INTERN") return;
+          if (!includeAllRoles && !isRoleEligible(role, prizeMode, minorInternsOnly)) return;
           newBall(name, null, false, role);
         });
         syncBallSizes();
@@ -1840,75 +1767,45 @@
         context.arc(bx, by, Math.max(1, r - 0.4), 0, Math.PI * 2);
         context.stroke();
 
-        // Center Regency cameo crest or parchment nameplate (rotates with ragdoll spin, no shadows)
+        // Center Regency cameo crest (always concealed on the ball itself)
         context.save();
         context.translate(bx, by);
         context.rotate(ball.angle || 0);
-        if (hideNames) {
-          const sealR = Math.max(5.8, r * 0.38);
+        const sealR = Math.max(5.8, r * 0.38);
 
-          const cameoGrad = context.createRadialGradient(-sealR * 0.25, -sealR * 0.25, 1, 0, 0, sealR);
-          cameoGrad.addColorStop(0, "#fffef9");
-          cameoGrad.addColorStop(0.72, "#faf0d9");
-          cameoGrad.addColorStop(1, "#ebd7ad");
+        const cameoGrad = context.createRadialGradient(-sealR * 0.25, -sealR * 0.25, 1, 0, 0, sealR);
+        cameoGrad.addColorStop(0, "#fffef9");
+        cameoGrad.addColorStop(0.72, "#faf0d9");
+        cameoGrad.addColorStop(1, "#ebd7ad");
 
+        context.beginPath();
+        context.arc(0, 0, sealR, 0, Math.PI * 2);
+        context.fillStyle = cameoGrad;
+        context.fill();
+
+        const bezelGrad = context.createLinearGradient(-sealR, -sealR, sealR, sealR);
+        bezelGrad.addColorStop(0, "#fff4c7");
+        bezelGrad.addColorStop(0.5, "#d4af52");
+        bezelGrad.addColorStop(1, "#a67e26");
+        context.strokeStyle = bezelGrad;
+        context.lineWidth = Math.max(1, 1.6 * scale);
+        context.beginPath();
+        context.arc(0, 0, sealR, 0, Math.PI * 2);
+        context.stroke();
+
+        if (sealR >= 8) {
+          context.strokeStyle = "rgba(184, 141, 43, 0.48)";
+          context.lineWidth = Math.max(0.5, 0.7 * scale);
           context.beginPath();
-          context.arc(0, 0, sealR, 0, Math.PI * 2);
-          context.fillStyle = cameoGrad;
-          context.fill();
-
-          const bezelGrad = context.createLinearGradient(-sealR, -sealR, sealR, sealR);
-          bezelGrad.addColorStop(0, "#fff4c7");
-          bezelGrad.addColorStop(0.5, "#d4af52");
-          bezelGrad.addColorStop(1, "#a67e26");
-          context.strokeStyle = bezelGrad;
-          context.lineWidth = Math.max(1, 1.6 * scale);
-          context.beginPath();
-          context.arc(0, 0, sealR, 0, Math.PI * 2);
+          context.arc(0, 0, sealR * 0.76, 0, Math.PI * 2);
           context.stroke();
-
-          if (sealR >= 8) {
-            context.strokeStyle = "rgba(184, 141, 43, 0.48)";
-            context.lineWidth = Math.max(0.5, 0.7 * scale);
-            context.beginPath();
-            context.arc(0, 0, sealR * 0.76, 0, Math.PI * 2);
-            context.stroke();
-          }
-
-          context.fillStyle = "#8a681e";
-          context.textAlign = "center";
-          context.textBaseline = "middle";
-          context.font = `700 ${Math.max(7, +(12.5 * scale).toFixed(1))}px "Cormorant Garamond", Georgia, serif`;
-          context.fillText("✦", 0, 0.6 * scale);
-        } else {
-          const lines = formatBallLines(ball.name);
-          const plateH = (lines.length > 1 ? 23 : 16.5) * scale * (1 - dissolve * 0.18);
-          const plateW = r * 1.84;
-          const plateRadius = Math.max(3, 7 * scale);
-
-          context.beginPath();
-          context.roundRect(-plateW / 2, -plateH / 2, plateW, plateH, plateRadius);
-          context.fillStyle = "rgba(255, 251, 243, 0.96)";
-          context.fill();
-
-          context.strokeStyle = "rgba(184, 141, 43, 0.85)";
-          context.lineWidth = Math.max(0.7, 1.1 * scale);
-          context.stroke();
-
-          const fontSize = Math.max(5, +(8.8 * scale).toFixed(1));
-          const textPad = Math.max(2, 6 * scale);
-          const lineGap = 4.8 * scale;
-          context.fillStyle = "#1a2332";
-          context.textAlign = "center";
-          context.textBaseline = "middle";
-          context.font = `700 ${fontSize}px "Inter", "Segoe UI", sans-serif`;
-          if (lines.length === 1) {
-            context.fillText(lines[0], 0, 0.5 * scale, plateW - textPad);
-          } else {
-            context.fillText(lines[0], 0, -lineGap, plateW - textPad);
-            context.fillText(lines[1], 0, lineGap, plateW - textPad);
-          }
         }
+
+        context.fillStyle = "#8a681e";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.font = `700 ${Math.max(7, +(12.5 * scale).toFixed(1))}px "Cormorant Garamond", Georgia, serif`;
+        context.fillText("✦", 0, 0.6 * scale);
         context.restore();
         context.restore();
       }
@@ -2364,15 +2261,9 @@
         document.querySelectorAll(".interactive-control").forEach((control) => {
           control.disabled = !enabled;
         });
-        ["namesInput", "addNameInput", "addNameButton", "reshuffleButton", "resetButton"].forEach((id) => {
-          element(id).disabled = !enabled || liveMode;
-        });
-        element("removeWinnerToggle").disabled = !enabled;
-        element("hideNamesToggle").disabled = !enabled;
+        namesInput.readOnly = liveMode || !enabled;
         element("shuffleVitrineButton").disabled = !enabled;
         element("soundButton").disabled = !enabled;
-        element("liveModeButton").disabled = !enabled || liveMode;
-        element("sampleModeButton").disabled = !enabled || !liveMode;
       }
 
       function startAnimation(ball, result) {
@@ -2608,23 +2499,12 @@
         }
       }
 
-      function applyLivePayload(payload) {
-        const allParticipants = Array.isArray(payload && payload.participants) ? payload.participants : [];
-        latestLiveParticipants = allParticipants;
-        let incoming = allParticipants.filter((participant) =>
-          removeWinner
-            ? participant.status === "ACTIVE"
-            : participant.status === "ACTIVE" || participant.status === "WON"
-        );
-        if (incoming.length === 0 && !removeWinner) {
-          incoming = allParticipants.filter((participant) => participant.status === "ACTIVE" || participant.status === "WON");
-        }
-        if (prizeMode === "MAJOR") {
-          incoming = incoming.filter((participant) => String(participant.role).toUpperCase() === "EMPLOYEE");
-        }
+      function syncLiveBallsImmediate(incoming) {
         const incomingIds = new Set(incoming.map((participant) => String(participant.id)));
         for (let index = balls.length - 1; index >= 0; index -= 1) {
-          if (!incomingIds.has(String(balls[index].id))) balls.splice(index, 1);
+          if (!incomingIds.has(String(balls[index].id)) || balls[index].disintegrating) {
+            balls.splice(index, 1);
+          }
         }
         const existingIds = new Set(balls.map((ball) => String(ball.id)));
         incoming.forEach((participant) => {
@@ -2639,112 +2519,63 @@
         });
         syncBallSizes();
         namesInput.value = incoming.map((participant) => String(participant.name)).join("\n");
-        renderMaskedNames(incoming.length);
-        const modeLabel = prizeMode === "MAJOR" ? "employee" : "arrived guest";
-        element("nameCounter").textContent = `${incoming.length} ${modeLabel}${incoming.length === 1 ? "" : "s"}`;
-        machineStatus.textContent = `${incoming.length} ${modeLabel}${incoming.length === 1 ? "" : "s"} in the ballroom vitrine.`;
+        element("liveBanner").textContent = getModeBadgeText(prizeMode, minorInternsOnly);
+        element("nameCounter").textContent = getCountLabel(incoming.length, prizeMode, minorInternsOnly);
+        machineStatus.textContent = `${getCountLabel(incoming.length, prizeMode, minorInternsOnly)} in the ballroom vitrine.`;
       }
 
-      async function selectPrizeMode(nextMode) {
-        if (busy) return;
-        closeCutscene();
-        setLedgerError("");
-        prizeMode = nextMode === "MAJOR" ? "MAJOR" : "MINOR";
+      async function applyLivePayload(payload) {
+        const allParticipants = Array.isArray(payload && payload.participants) ? payload.participants : [];
+        latestLiveParticipants = allParticipants;
 
-        element("minorPrizeButton").classList.toggle("active", prizeMode === "MINOR");
-        element("minorPrizeButton").setAttribute("aria-pressed", prizeMode === "MINOR" ? "true" : "false");
-        element("majorPrizeButton").classList.toggle("active", prizeMode === "MAJOR");
-        element("majorPrizeButton").setAttribute("aria-pressed", prizeMode === "MAJOR" ? "true" : "false");
+        const incomingSettings = payload && payload.clawSettings ? payload.clawSettings : null;
+        const nextPrizeMode = incomingSettings && incomingSettings.prizeCategory === "MAJOR" ? "MAJOR" : "MINOR";
+        const nextMinorInternsOnly = nextPrizeMode === "MAJOR"
+          ? false
+          : Boolean(incomingSettings && incomingSettings.minorInternsOnly);
+        const filterChanged = nextPrizeMode !== prizeMode || nextMinorInternsOnly !== minorInternsOnly;
 
-        busy = true;
-        enableControls(false);
+        prizeMode = nextPrizeMode;
+        minorInternsOnly = nextMinorInternsOnly;
 
-        try {
-          if (liveMode) {
-            // Restore all previously picked ('WON') guests back into the active pool
-            const res = await fetch("/api/events/reset-pool", {
-              method: "POST",
-              headers: { Accept: "application/json" }
-            });
-            if (res.ok) {
-              const payload = await res.json();
-              latestLiveParticipants = Array.isArray(payload.participants) ? payload.participants : latestLiveParticipants;
-            }
-            queuedLivePayload = null;
+        let incoming = allParticipants.filter((participant) =>
+          removeWinner
+            ? participant.status === "ACTIVE"
+            : participant.status === "ACTIVE" || participant.status === "WON"
+        );
+        if (incoming.length === 0 && !removeWinner) {
+          incoming = allParticipants.filter((participant) => participant.status === "ACTIVE" || participant.status === "WON");
+        }
+        incoming = incoming.filter((participant) => isRoleEligible(participant.role, prizeMode, minorInternsOnly));
 
-            const allArrived = latestLiveParticipants.filter(
-              (p) => p.status === "ACTIVE" || p.status === "WON"
-            );
-            const existingIds = new Set(balls.map((b) => String(b.id)));
-            allArrived.forEach((p) => {
-              const existing = balls.find((b) => String(b.id) === String(p.id));
-              if (existing) {
-                existing.role = String(p.role || "EMPLOYEE").toUpperCase();
-                existing.disintegrating = false;
-                existing.disintegrateProgress = 0;
-              } else if (!existingIds.has(String(p.id))) {
-                addDroppedBall(String(p.name), String(p.id), String(p.role || "EMPLOYEE").toUpperCase());
-              }
-            });
-            namesInput.value = allArrived.map((p) => String(p.name)).join("\n");
-            renderMaskedNames(allArrived.length);
-            syncBallSizes();
-          } else {
-            // Sample mode: restore full sample pool first so all names reappear
-            if (!fullSampleNames || fullSampleNames.length === 0) {
-              fullSampleNames = [...sampleNames];
-            }
-            namesInput.value = fullSampleNames.join("\n");
-            resetBalls(fullSampleNames, true);
-            renderMaskedNames(fullSampleNames.length);
-          }
-
-          if (prizeMode === "MINOR") {
-            const count = balls.length;
-            element("nameCounter").textContent = liveMode
-              ? `${count} arrived guest${count === 1 ? "" : "s"}`
-              : `${count} name${count === 1 ? "" : "s"}`;
-            machineStatus.textContent = "Minor Prizes selected — all guests are in the vitrine!";
-            saveState();
-            return;
-          }
-
-          // MAJOR PRIZES: Disintegrate all Intern / Guest balls!
-          const internBalls = balls.filter((b) => String(b.role).toUpperCase() === "INTERN");
-          if (internBalls.length > 0) {
-            machineStatus.textContent = "Major Prizes selected — Interns & Guests are disintegrating from the pool…";
-            internBalls.forEach((b) => {
+        if (filterChanged) {
+          const ineligibleBalls = balls.filter((b) => !isRoleEligible(b.role, prizeMode, minorInternsOnly));
+          if (ineligibleBalls.length > 0) {
+            busy = true;
+            enableControls(false);
+            machineStatus.textContent = prizeMode === "MAJOR"
+              ? "Major Prizes selected — Interns & Guests are leaving the vitrine…"
+              : "Only Interns & Guests selected — Employees are leaving the vitrine…";
+            ineligibleBalls.forEach((b) => {
               b.disintegrating = true;
               b.disintegrateProgress = 0;
             });
             playTone("disintegrate");
             await new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 80 : 650));
-          }
-
-          // Remove INTERN balls in-place from vitrine & ledger
-          for (let i = balls.length - 1; i >= 0; i -= 1) {
-            if (String(balls[i].role).toUpperCase() === "INTERN" || balls[i].disintegrating) {
-              balls.splice(i, 1);
+            syncLiveBallsImmediate(incoming);
+            balls.forEach((b) => { b.settled = false; });
+            busy = false;
+            enableControls(true);
+            if (queuedLivePayload) {
+              const nextQueued = queuedLivePayload;
+              queuedLivePayload = null;
+              void applyLivePayload(nextQueued);
             }
+            return;
           }
-          syncBallSizes();
-          balls.forEach((b) => {
-            b.settled = false;
-          });
-
-          const remainingNames = balls.map((b) => b.name);
-          namesInput.value = remainingNames.join("\n");
-          renderMaskedNames(remainingNames.length);
-          element("nameCounter").textContent = liveMode
-            ? `${remainingNames.length} employee${remainingNames.length === 1 ? "" : "s"}`
-            : `${remainingNames.length} name${remainingNames.length === 1 ? "" : "s"} (Employees)`;
-          machineStatus.textContent = "Major Prizes active — only Employees remain in the vitrine!";
-          saveState();
-        } finally {
-          queuedLivePayload = null;
-          busy = false;
-          enableControls(true);
         }
+
+        syncLiveBallsImmediate(incoming);
       }
 
       async function useLiveGuests() {
@@ -2758,11 +2589,9 @@
           }
           if (!response.ok) throw new Error(payload.message || "The arrived guest list could not be loaded.");
           liveMode = true;
+          namesInput.readOnly = true;
           element("signInMessage").classList.remove("visible");
-          element("liveBanner").textContent = "Live Arrivals";
-          element("liveModeButton").hidden = true;
-          element("sampleModeButton").hidden = false;
-          applyLivePayload(payload);
+          await applyLivePayload(payload);
           enableControls(true);
           if (window.liveStream) window.liveStream.close();
           window.liveStream = new EventSource("/api/events/stream");
@@ -2771,7 +2600,7 @@
             try {
               const state = JSON.parse(event.data);
               if (busy || syncingLiveState) queuedLivePayload = state;
-              else applyLivePayload(state);
+              else void applyLivePayload(state);
             } catch (_error) {
               setLedgerError("A live guest update could not be read.");
             }
@@ -2783,7 +2612,7 @@
               .then(async (syncResponse) => {
                 const current = await syncResponse.json();
                 if (!syncResponse.ok) throw new Error(current.message || "The live guest list could not be synchronized.");
-                applyLivePayload(current);
+                await applyLivePayload(current);
               })
               .catch((syncError) => {
                 element("signInMessage").classList.add("visible");
@@ -2794,34 +2623,13 @@
                 if (!busy && queuedLivePayload) {
                   const latest = queuedLivePayload;
                   queuedLivePayload = null;
-                  applyLivePayload(latest);
+                  void applyLivePayload(latest);
                 }
               });
           });
         } catch (error) {
           setLedgerError(error instanceof Error ? error.message : "The arrived guest list could not be loaded.");
         }
-      }
-
-      function useSamples() {
-        if (window.liveStream) window.liveStream.close();
-        liveMode = false;
-        queuedLivePayload = null;
-        element("liveBanner").textContent = "Sample Dance Card";
-        element("signInMessage").classList.remove("visible");
-        element("liveModeButton").hidden = false;
-        element("sampleModeButton").hidden = true;
-        namesInput.readOnly = false;
-        fullSampleNames = [...sampleNames];
-        const initialNames = prizeMode === "MAJOR"
-          ? fullSampleNames.filter((name) => getSampleRole(name) === "EMPLOYEE")
-          : fullSampleNames;
-        namesInput.value = initialNames.join("\n");
-        renderHistory();
-        updateLedger();
-        saveState();
-        enableControls(true);
-        machineStatus.textContent = "Sample names restored. The Promenade Claw is ready.";
       }
 
       async function pullLever() {
@@ -2833,7 +2641,9 @@
           if (balls.length === 0) {
             machineStatus.textContent = prizeMode === "MAJOR"
               ? "No arrived employees are in the vitrine yet."
-              : "No arrived guests are in the vitrine yet.";
+              : minorInternsOnly
+                ? "No arrived interns or guests are in the vitrine yet."
+                : "No arrived guests are in the vitrine yet.";
             return;
           }
           busy = true;
@@ -2843,12 +2653,12 @@
             const response = await fetch("/api/events/select-winner", {
               method: "POST",
               headers: { "Content-Type": "application/json", Accept: "application/json" },
-              body: JSON.stringify({ removeWinner, prizeCategory: prizeMode })
+              body: JSON.stringify({ removeWinner, prizeCategory: prizeMode, minorInternsOnly })
             });
             const payload = await response.json();
             if (response.status === 401) {
               element("signInMessage").classList.add("visible");
-              throw new Error("The host session has expired. Sign in, then load arrived guests again.");
+              throw new Error("The host session has expired. Sign in, then reload the page.");
             }
             if (!response.ok) throw new Error(payload.message || "The server could not select an eligible guest.");
             const selected = payload.winner;
@@ -2862,14 +2672,13 @@
           return;
         }
 
-        let names = readNames();
-        if (prizeMode === "MAJOR") {
-          names = names.filter((name) => getSampleRole(name) === "EMPLOYEE");
-        }
+        let names = readNames().filter((name) => isRoleEligible(getSampleRole(name), prizeMode, minorInternsOnly));
         if (names.length === 0) {
           machineStatus.textContent = prizeMode === "MAJOR"
             ? "No eligible employees remain in the Society Ledger."
-            : "Add at least one guest to the Society Ledger.";
+            : minorInternsOnly
+              ? "No eligible interns or guests remain in the Society Ledger."
+              : "No guests remain in the Society Ledger.";
           return;
         }
 
@@ -2881,141 +2690,18 @@
         });
       }
 
-      async function addGuestManually() {
-        if (busy) return;
-        const input = element("manualGuestInput");
-        const name = input.value.trim();
-        if (!name) return;
-        const selectedRole = element("manualRoleIntern").checked ? "INTERN" : "EMPLOYEE";
-        setLedgerError("");
-
-        if (liveMode) {
-          try {
-            element("manualGuestAddButton").disabled = true;
-            const response = await fetch("/api/participants", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Accept: "application/json" },
-              body: JSON.stringify({ name, role: selectedRole, arrived: true })
-            });
-            const payload = await response.json();
-            if (response.status === 401) {
-              element("signInMessage").classList.add("visible");
-              throw new Error("The host session has expired. Sign in before adding guests.");
-            }
-            if (!response.ok) {
-              throw new Error(payload.message || "Could not add this guest.");
-            }
-            input.value = "";
-            const syncRes = await fetch("/api/event", { headers: { Accept: "application/json" } });
-            if (syncRes.ok) {
-              const eventPayload = await syncRes.json();
-              applyLivePayload(eventPayload);
-            }
-            if (prizeMode === "MAJOR" && selectedRole === "INTERN") {
-              machineStatus.textContent = `${name} added as Intern / Guest (will join when Minor Prizes is selected).`;
-            } else {
-              machineStatus.textContent = `${name} added to the ballroom vitrine.`;
-            }
-          } catch (error) {
-            setLedgerError(error instanceof Error ? error.message : "Could not add this guest.");
-          } finally {
-            element("manualGuestAddButton").disabled = busy;
-          }
-          return;
-        }
-
-        const names = readNames();
-        sampleRoleMap[name] = selectedRole;
-        if (!fullSampleNames.includes(name)) fullSampleNames.push(name);
-        if (prizeMode === "MAJOR" && selectedRole === "INTERN") {
-          input.value = "";
-          machineStatus.textContent = `${name} saved as Intern / Guest (will appear in Minor Prizes mode).`;
-          saveState();
-          return;
-        }
-        names.push(name);
-        namesInput.value = names.join("\n");
-        input.value = "";
-        updateLedger();
-        saveState();
-      }
-
-      function addName() {
-        const name = element("addNameInput").value.trim();
-        if (!name) return;
-        const names = readNames();
-        names.push(name);
-        if (!fullSampleNames.includes(name)) fullSampleNames.push(name);
-        namesInput.value = names.join("\n");
-        element("addNameInput").value = "";
-        setLedgerError("");
-        updateLedger();
-        saveState();
-      }
-
       namesInput.addEventListener("input", () => {
+        if (liveMode) return;
         setLedgerError("");
         updateLedger();
         saveState();
       });
 
-      element("manualGuestAddButton").addEventListener("click", () => {
-        void addGuestManually();
-      });
-      element("manualGuestInput").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          void addGuestManually();
-        }
-      });
-      [element("manualRoleEmployee"), element("manualRoleIntern")].forEach((radio) => {
-        radio.addEventListener("change", () => {
-          element("manualRoleEmployeeLabel").classList.toggle("checked", element("manualRoleEmployee").checked);
-          element("manualRoleInternLabel").classList.toggle("checked", element("manualRoleIntern").checked);
-        });
-      });
-
-      element("addNameButton").addEventListener("click", addName);
-      element("addNameInput").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") addName();
-      });
-      element("reshuffleButton").addEventListener("click", () => {
-        if (busy) return;
-        machineStatus.textContent = "Shuffling the baubles in the vitrine…";
-        void shuffleBallsInVitrine();
-      });
       element("shuffleVitrineButton").addEventListener("click", () => {
         if (busy) return;
         machineStatus.textContent = "Shuffling the baubles in the vitrine…";
         void shuffleBallsInVitrine();
       });
-      element("resetButton").addEventListener("click", () => {
-        fullSampleNames = [...sampleNames];
-        const targetNames = prizeMode === "MAJOR"
-          ? fullSampleNames.filter((name) => getSampleRole(name) === "EMPLOYEE")
-          : fullSampleNames;
-        namesInput.value = targetNames.join("\n");
-        updateLedger();
-        saveState();
-      });
-      element("minorPrizeButton").addEventListener("click", () => {
-        void selectPrizeMode("MINOR");
-      });
-      element("majorPrizeButton").addEventListener("click", () => {
-        void selectPrizeMode("MAJOR");
-      });
-      element("removeWinnerToggle").addEventListener("change", (event) => {
-        removeWinner = event.target.checked;
-        saveState();
-      });
-      element("hideNamesToggle").addEventListener("change", (event) => {
-        hideNames = event.target.checked;
-        namesInput.hidden = hideNames;
-        element("maskedNames").hidden = !hideNames;
-        saveState();
-      });
-      element("liveModeButton").addEventListener("click", useLiveGuests);
-      element("sampleModeButton").addEventListener("click", useSamples);
       element("leverButton").addEventListener("click", pullLever);
       element("closeCutsceneButton").addEventListener("click", closeCutscene);
       element("cutsceneOverlay").addEventListener("click", (event) => {
@@ -3041,16 +2727,6 @@
       window.addEventListener("storage", (event) => {
         if (event.key === themeStorageKey && (event.newValue === "light" || event.newValue === "dark")) {
           applyTheme(event.newValue);
-        }
-      });
-
-      element("signOutButton").addEventListener("click", async () => {
-        try {
-          const response = await fetch("/api/auth/logout", { method: "POST", headers: { Accept: "application/json" } });
-          if (!response.ok) throw new Error("Unable to sign out. Please try again.");
-          window.location.assign("/");
-        } catch (error) {
-          setLedgerError(error instanceof Error ? error.message : "Unable to sign out.");
         }
       });
 

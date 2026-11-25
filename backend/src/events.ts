@@ -4,7 +4,7 @@ import { config } from './config.js';
 import { prisma } from './db.js';
 import { getAddressState } from './address.js';
 import { prepareParticipant } from './qr.js';
-import { getGossip, getLatestWinner } from './state.js';
+import { getClawSettings, getGossip, getLatestWinner } from './state.js';
 
 export async function ensureEvent(): Promise<Event> {
   let event = await prisma.event.findFirst({ orderBy: { createdAt: 'asc' } });
@@ -57,5 +57,10 @@ export async function getEventPayload() {
     winner: getLatestWinner(),
     gossip: getGossip(),
     publicAddress: address,
+    clawSettings: getClawSettings(),
+    qrAccess: {
+      openAt: event.qrOpenAt ? event.qrOpenAt.toISOString() : null,
+      closed: event.qrClosed,
+    },
   };
 }

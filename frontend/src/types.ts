@@ -42,12 +42,21 @@ export type HostPayload = {
     isLocal: boolean;
     mode: 'wifi' | 'public' | 'local';
   };
+  clawSettings?: {
+    prizeCategory: 'MINOR' | 'MAJOR';
+    minorInternsOnly: boolean;
+  };
+  qrAccess?: {
+    openAt: string | null;
+    closed: boolean;
+  };
 };
 
 export type GuestPayload = {
   valid: boolean;
-  status?: 'activated' | 'already' | 'invalid' | 'already-won';
+  status?: 'activated' | 'already' | 'invalid' | 'already-won' | 'not-open-yet' | 'closed';
   message: string;
+  qrOpenAt?: string | null;
   participant?: {
     name: string;
   };

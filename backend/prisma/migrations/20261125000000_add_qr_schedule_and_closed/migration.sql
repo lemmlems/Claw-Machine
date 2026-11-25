@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Event" ADD COLUMN "qrOpenAt" DATETIME;
+ALTER TABLE "Event" ADD COLUMN "qrClosed" BOOLEAN NOT NULL DEFAULT false;

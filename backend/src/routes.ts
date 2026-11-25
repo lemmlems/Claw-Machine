@@ -9,7 +9,7 @@ import { ensureEvent, getEventPayload } from './events.js';
 import { pickWinner } from './pick.js';
 import { prepareParticipant } from './qr.js';
 import { broadcastState, handleEventStream } from './sse.js';
-import { addGossip, getLatestWinner, setLatestWinner } from './state.js';
+import { addGossip, getClawSettings, getLatestWinner, setClawSettings, setLatestWinner } from './state.js';
 
 const participantSchema = z.object({
   name: z.string().trim().min(1),
@@ -73,7 +73,31 @@ apiRouter.get('/activate/:token', asyncRoute(async (req, res) => {
   if (!event || event.status !== 'OPEN') {
     res.json({
       valid: false,
+      status: 'closed',
       message: 'This invitation is not valid, or the ball has closed. Pray, ask your host.',
+      participant: { name: participant.name },
+    });
+    return;
+  }
+
+  if (event.qrClosed) {
+    res.json({
+      valid: false,
+      status: 'closed',
+      message: 'QR check-in has been closed by the host. Pray, speak with your host for assistance.',
+      participant: { name: participant.name },
+      qrOpenAt: event.qrOpenAt ? event.qrOpenAt.toISOString() : null,
+    });
+    return;
+  }
+
+  if (event.qrOpenAt && Date.now() < event.qrOpenAt.getTime()) {
+    res.json({
+      valid: false,
+      status: 'not-open-yet',
+      message: 'The ballroom doors have not yet opened. Pray return once the appointed date and time arrives.',
+      participant: { name: participant.name },
+      qrOpenAt: event.qrOpenAt.toISOString(),
     });
     return;
   }
@@ -162,6 +186,60 @@ apiRouter.delete('/prizes/:id', asyncRoute(async (req, res) => {
   }
   broadcastState(await getEventPayload());
   res.json({ ok: true });
+}));
+
+const qrAccessSchema = z.object({
+  openAt: z.string().nullable().optional(),
+  closed: z.boolean().optional(),
+});
+
+apiRouter.post('/settings/qr-access', asyncRoute(async (req, res) => {
+  const parsed = qrAccessSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: 'Invalid QR access settings.' });
+    return;
+  }
+
+  const data: { qrOpenAt?: Date | null; qrClosed?: boolean } = {};
+  if ('openAt' in parsed.data) {
+    if (!parsed.data.openAt) {
+      data.qrOpenAt = null;
+    } else {
+      const parsedDate = new Date(parsed.data.openAt);
+      if (Number.isNaN(parsedDate.getTime())) {
+        res.status(400).json({ message: 'Please choose a valid opening date and time.' });
+        return;
+      }
+      data.qrOpenAt = parsedDate;
+    }
+  }
+  if (typeof parsed.data.closed === 'boolean') {
+    data.qrClosed = parsed.data.closed;
+  }
+
+  const event = await ensureEvent();
+  const updated = await prisma.event.update({
+    where: { id: event.id },
+    data,
+  });
+
+  if (typeof parsed.data.closed === 'boolean') {
+    addGossip(
+      parsed.data.closed
+        ? 'Dearest guests, QR check-in has been closed by the host.'
+        : 'Dearest guests, QR check-in has been reopened by the host.',
+    );
+  }
+
+  const payload = await getEventPayload();
+  broadcastState(payload);
+  res.json({
+    ok: true,
+    qrAccess: {
+      openAt: updated.qrOpenAt ? updated.qrOpenAt.toISOString() : null,
+      closed: updated.qrClosed,
+    },
+  });
 }));
 
 apiRouter.post('/settings/public-address', asyncRoute(async (req, res) => {
@@ -306,6 +384,31 @@ apiRouter.patch('/participants/:id/role', asyncRoute(async (req, res) => {
   res.json({ ok: true });
 }));
 
+const clawSettingsSchema = z.object({
+  prizeCategory: z.enum(['MINOR', 'MAJOR']).optional(),
+  minorInternsOnly: z.boolean().optional(),
+  resetPool: z.boolean().optional(),
+});
+
+apiRouter.post('/events/claw-settings', asyncRoute(async (req, res) => {
+  const parsed = clawSettingsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: 'Invalid claw settings.' });
+    return;
+  }
+  const event = await ensureEvent();
+  const settings = setClawSettings(parsed.data);
+  if (parsed.data.resetPool) {
+    await prisma.participant.updateMany({
+      where: { eventId: event.id, status: 'WON' },
+      data: { status: 'ACTIVE' },
+    });
+  }
+  const payload = await getEventPayload();
+  broadcastState(payload);
+  res.json({ ok: true, clawSettings: settings, payload });
+}));
+
 apiRouter.post('/events/reset-pool', asyncRoute(async (_req, res) => {
   const event = await ensureEvent();
   await prisma.participant.updateMany({
@@ -319,13 +422,25 @@ apiRouter.post('/events/reset-pool', asyncRoute(async (_req, res) => {
 
 apiRouter.post('/events/select-winner', asyncRoute(async (req, res) => {
   const removeWinner = req.body?.removeWinner === true;
-  const prizeCategory = req.body?.prizeCategory === 'MAJOR' ? 'MAJOR' : 'MINOR';
-  const result = await pickWinner(removeWinner, prizeCategory);
+  const currentSettings = getClawSettings();
+  const prizeCategory = req.body?.prizeCategory === 'MAJOR'
+    ? 'MAJOR'
+    : req.body?.prizeCategory === 'MINOR'
+      ? 'MINOR'
+      : currentSettings.prizeCategory;
+  const minorInternsOnly = prizeCategory === 'MAJOR'
+    ? false
+    : typeof req.body?.minorInternsOnly === 'boolean'
+      ? req.body.minorInternsOnly
+      : currentSettings.minorInternsOnly;
+  const result = await pickWinner(removeWinner, prizeCategory, minorInternsOnly);
   if (!result) {
     res.status(400).json({
       message: prizeCategory === 'MAJOR'
         ? 'No eligible arrived employees are in the pool for a Major Prize.'
-        : 'No guests have arrived yet. The ballroom awaits.',
+        : minorInternsOnly
+          ? 'No eligible arrived interns or guests are in the pool for a Minor Prize.'
+          : 'No guests have arrived yet. The ballroom awaits.',
     });
     return;
   }

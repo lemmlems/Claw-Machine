@@ -12,8 +12,8 @@ export function PageHeader({ children }: { children?: ReactNode }) {
       </div>
       <nav className="page-nav" aria-label="Host pages">
         <a href="/" className={currentPath === '/' ? 'active' : ''}>Guest Ledger</a>
-        <a href="/rsvp" className={currentPath === '/rsvp' ? 'active' : ''}>RSVP</a>
-        <a href="/claw" className={currentPath === '/claw' ? 'active' : ''}>The Promenade Claw</a>
+        <a href="/claw-admin" className={currentPath === '/claw-admin' ? 'active' : ''}>Promenade Claw (Admin)</a>
+        <a href="/claw" target="_blank" rel="noopener noreferrer">Promenade Claw (Users)</a>
         <ThemeToggle />
         {children}
       </nav>
